@@ -85,7 +85,7 @@ func mapUserModelToUserList(fsResp []model.User) []UserList {
 			Email:        v.Email,
 			CreatedAt:    v.CreatedAt,
 			UpdatedAt:    v.UpdatedAt,
-			IsUserActive: v.Is_Active,
+			IsUserActive: v.IsUserActive,
 		})
 	}
 	return uList
