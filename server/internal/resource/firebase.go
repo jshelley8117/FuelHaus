@@ -39,7 +39,6 @@ func InitializeFirebaseServices(ctx context.Context) (*FirebaseServices, error) 
 	if err != nil {
 		return nil, err
 	}
-	defer firestoreClient.Close()
 
 	// Init Auth
 	authClient, err := app.Auth(ctx)
