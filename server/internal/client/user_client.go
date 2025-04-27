@@ -41,3 +41,25 @@ func (uc *UserClient) FetchAllUsers(ctx context.Context, firebaseServices resour
 
 	return users, nil
 }
+
+func (uc *UserClient) FetchUserByEmail(ctx context.Context, firebaseServices resource.FirebaseServices, email string) (model.User, error) {
+	firestoreClient := firebaseServices.Firestore
+
+	query := firestoreClient.Collection("users").Where("email", "==", email).Limit(1)
+	docIter := query.Documents(ctx)
+	defer docIter.Stop()
+
+	doc, err := docIter.Next()
+	if err == iterator.Done {
+		return model.User{}, nil
+	}
+	if err != nil {
+		return model.User{}, err
+	}
+	var user model.User
+	if err := doc.DataTo(&user); err != nil {
+		return model.User{}, err
+	}
+	user.UserId = doc.Ref.ID
+	return user, nil
+}
