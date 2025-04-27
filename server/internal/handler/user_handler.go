@@ -16,6 +16,8 @@ func NewUserHandler(userService service.IUserService) *UserHandler {
 	return &UserHandler{UserService: userService}
 }
 
+// ServeHTTP is a UserHandler implementation of the net/http package's "ServeHTTP"
+// function, which used to route requests to /users endpoint based on the HTTP Method
 func (uh UserHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var user model.User
 
