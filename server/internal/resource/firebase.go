@@ -23,7 +23,6 @@ func InitializeFirebaseServices(ctx context.Context) (*FirebaseServices, error) 
 	jsonFilePath := fmt.Sprintf("./docs/%s", os.Getenv("FB_ADMIN_SA"))
 	sa := option.WithCredentialsFile(jsonFilePath)
 	projectId := os.Getenv("FB_PROJ_ID")
-	fmt.Println("AM i here?")
 
 	config := &firebase.Config{
 		ProjectID: projectId,
@@ -32,7 +31,6 @@ func InitializeFirebaseServices(ctx context.Context) (*FirebaseServices, error) 
 	// Init App
 	app, err := firebase.NewApp(ctx, config, sa)
 	if err != nil {
-		fmt.Println("Is err happening here?")
 		return nil, err
 	}
 
