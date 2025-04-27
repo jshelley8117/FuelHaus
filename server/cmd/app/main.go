@@ -28,7 +28,7 @@ func main() {
 
 	// Initialize Server
 	mux := http.NewServeMux()
-	SetupRoutes(mux)
+	SetupRoutes(mux, *firebaseServices)
 
 	server := http.Server{
 		Addr:    ":8080",

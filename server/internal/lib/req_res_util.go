@@ -15,11 +15,10 @@ type HandlerResponse struct {
 
 // WriteJSONResponse writes a response to the client
 func WriteJSONResponse(w http.ResponseWriter, statusCode int, v interface{}) {
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
+	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(v); err != nil {
 		log.Printf("Failed to encode JSON response: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
 		errResp := []byte(`{"message": "Failed to Encode when preparing Response Object"}`)
 		w.Write(errResp)
 	}

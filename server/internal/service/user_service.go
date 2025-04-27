@@ -1,66 +1,92 @@
 package service
 
 import (
+	"context"
 	"time"
 
+	"github.com/jshelley8117/FuelHaus/internal/client"
 	"github.com/jshelley8117/FuelHaus/internal/model"
+	"github.com/jshelley8117/FuelHaus/internal/resource"
 )
 
 type IUserService interface {
-	GetAllUsers() ([]model.User, error)
-	GetUserByEmail(email string) (model.User, error)
-	CreateUser(reqUser model.User) error
-	DeleteUser(userId uint16) error
-	UpdateUser(reqUser model.User) error
+	GetAllUsers(ctx context.Context) ([]UserList, error)
+	GetUserByEmail(ctx context.Context, email string) (model.User, error)
+	CreateUser(ctx context.Context, reqUser model.User) error
+	DeleteUser(ctx context.Context, userId string) error
+	UpdateUser(ctx context.Context, reqUser model.User) error
 }
 
-type UserService struct{}
-
-func NewUserService() UserService {
-	return UserService{}
+type UserService struct {
+	UserClient      client.UserClient
+	FirebaseService resource.FirebaseServices
 }
 
 type UserList struct {
-	UserId       uint16
+	UserId       string
+	FirstName    string
+	LastName     string
 	Email        string
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 	IsUserActive bool
 }
 
-// Returns a slice of Users - TODO: Need to map to some user response so that we aren't returning unnecessary data.
-func GetAllUsers() ([]model.User, error) {
-
-	// after successfully receiving users, map response to UserList
-	return nil, nil
+func NewUserService(userClient client.UserClient, firebaseService resource.FirebaseServices) UserService {
+	return UserService{
+		UserClient:      userClient,
+		FirebaseService: firebaseService,
+	}
 }
 
-func GetUserByEmail(email string) (model.User, error) {
+// Returns a slice of Users - TODO: Need to map to some user response so that we aren't returning unnecessary data.
+func (us *UserService) GetAllUsers(ctx context.Context) ([]UserList, error) {
+
+	fsUsers, err := us.UserClient.FetchAllUsers(ctx, us.FirebaseService)
+	if err != nil {
+		return nil, err
+	}
+	users := mapUserModelToUserList(fsUsers)
+
+	return users, nil
+}
+
+func (us *UserService) GetUserByEmail(ctx context.Context, email string) (model.User, error) {
 	var user model.User
 
 	return user, nil
 }
 
-func CreateUser(reqUser model.User) error {
+func (us *UserService) CreateUser(ctx context.Context, reqUser model.User) error {
 
 	return nil
 }
 
-func DeleteUser(userId uint16) error {
+func (us *UserService) DeleteUser(ctx context.Context, userId string) error {
 
 	return nil
 }
 
-func UpdateUser(reqUser model.User) error {
+func (us *UserService) UpdateUser(ctx context.Context, reqUser model.User) error {
 
 	return nil
 }
 
 // PRIVATE FUNCTIONS BELOW
 
-// Maps Database Response for GetAllUsers to UserResponseList model
-func mapUserModelToUserList([]model.User) []UserList {
+// Maps Database Response for GetAllUsers to UserList model
+func mapUserModelToUserList(fsResp []model.User) []UserList {
 	var uList []UserList
-
+	for _, v := range fsResp {
+		uList = append(uList, UserList{
+			UserId:       v.UserId,
+			FirstName:    v.FirstName,
+			LastName:     v.LastName,
+			Email:        v.Email,
+			CreatedAt:    v.CreatedAt,
+			UpdatedAt:    v.UpdatedAt,
+			IsUserActive: v.Is_Active,
+		})
+	}
 	return uList
 }
