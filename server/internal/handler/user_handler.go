@@ -46,33 +46,41 @@ func (uh UserHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		var user model.User
 
-		if err := lib.DecodeAndValidateRequest(r, user); err != nil {
+		if err := lib.DecodeAndValidateRequest(r, &user); err != nil {
 			lib.WriteJSONResponse(w, http.StatusBadRequest, err)
+			return
 		}
 		if err := uh.UserService.CreateUser(ctx, user); err != nil {
 			lib.WriteJSONResponse(w, http.StatusInternalServerError, lib.HandlerResponse{Message: err.Error()})
+			return
 		}
 		lib.WriteJSONResponse(w, http.StatusOK, nil)
+		return
 	case http.MethodDelete:
-		var user model.User
-
-		if err := lib.DecodeAndValidateRequest(r, user); err != nil {
-			lib.WriteJSONResponse(w, http.StatusBadRequest, err)
-		}
-		if err := uh.UserService.DeleteUser(ctx, user.UserId); err != nil {
-			lib.WriteJSONResponse(w, http.StatusInternalServerError, lib.HandlerResponse{Message: err.Error()})
+		if r.URL.Query().Has("uid") {
+			uid := r.URL.Query().Get("uid")
+			if err := uh.UserService.DeleteUser(ctx, uid); err != nil {
+				lib.WriteJSONResponse(w, http.StatusInternalServerError, lib.HandlerResponse{Message: err.Error()})
+				return
+			}
+		} else {
+			lib.WriteJSONResponse(w, http.StatusBadRequest, lib.HandlerResponse{Message: "No matching User found with User ID"})
 		}
 		lib.WriteJSONResponse(w, http.StatusOK, nil)
+		return
 	case http.MethodPut:
 		var user model.User
 
 		if err := lib.DecodeAndValidateRequest(r, user); err != nil {
 			lib.WriteJSONResponse(w, http.StatusBadRequest, err)
+			return
 		}
 		if err := uh.UserService.UpdateUser(ctx, user); err != nil {
 			lib.WriteJSONResponse(w, http.StatusInternalServerError, lib.HandlerResponse{Message: err.Error()})
+			return
 		}
 		lib.WriteJSONResponse(w, http.StatusOK, nil)
+		return
 	default:
 		lib.WriteJSONResponse(w, http.StatusTeapot, lib.HandlerResponse{Message: "TEAPOT"})
 		return

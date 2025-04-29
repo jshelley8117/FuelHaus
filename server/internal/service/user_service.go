@@ -2,7 +2,10 @@ package service
 
 import (
 	"context"
+	"log"
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
 
 	"github.com/jshelley8117/FuelHaus/internal/client"
 	"github.com/jshelley8117/FuelHaus/internal/model"
@@ -68,12 +71,26 @@ func (us *UserService) GetUserByEmail(ctx context.Context, email string) (UserRe
 }
 
 func (us *UserService) CreateUser(ctx context.Context, reqUser model.User) error {
-
+	log.Println("Entered Service: CreateUser")
+	hpw, err := hashPassword(reqUser.Password)
+	if err != nil {
+		return err
+	}
+	reqUser.Password = hpw
+	reqUser.CreatedAt = time.Now()
+	reqUser.UpdatedAt = time.Now()
+	reqUser.IsUserActive = true
+	if err := us.UserClient.CreateUser(ctx, us.FirebaseService, reqUser); err != nil {
+		return err
+	}
 	return nil
 }
 
 func (us *UserService) DeleteUser(ctx context.Context, userId string) error {
-
+	log.Println("Entered Service: DeleteUser")
+	if err := us.UserClient.DeleteUser(ctx, us.FirebaseService, userId); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -99,4 +116,12 @@ func mapUserModelToUserList(fsResp []model.User) []UserResponse {
 		})
 	}
 	return uList
+}
+
+func hashPassword(pw string) (string, error) {
+	hpw, err := bcrypt.GenerateFromPassword([]byte(pw), bcrypt.DefaultCost)
+	if err != nil {
+		return pw, err
+	}
+	return string(hpw), nil
 }

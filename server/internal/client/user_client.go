@@ -63,3 +63,23 @@ func (uc *UserClient) FetchUserByEmail(ctx context.Context, firebaseServices res
 	user.UserId = doc.Ref.ID
 	return user, nil
 }
+
+func (uc *UserClient) CreateUser(ctx context.Context, firebaseServices resource.FirebaseServices, u model.User) error {
+	log.Println("Entered Client: CreateUser")
+	firestoreClient := firebaseServices.Firestore
+	_, _, err := firestoreClient.Collection("users").Add(ctx, u)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (uc *UserClient) DeleteUser(ctx context.Context, firebaseServices resource.FirebaseServices, userId string) error {
+	log.Println("Entered Client: DeleteUser")
+	firestoreClient := firebaseServices.Firestore
+	_, err := firestoreClient.Collection("users").Doc(userId).Delete(ctx)
+	if err != nil {
+		return err
+	}
+	return nil
+}
