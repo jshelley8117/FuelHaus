@@ -50,6 +50,7 @@ func (uh UserHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			lib.WriteJSONResponse(w, http.StatusBadRequest, err)
 			return
 		}
+		lib.SanitizeInput(&user)
 		if err := uh.UserService.CreateUser(ctx, user); err != nil {
 			lib.WriteJSONResponse(w, http.StatusInternalServerError, lib.HandlerResponse{Message: err.Error()})
 			return
@@ -77,6 +78,7 @@ func (uh UserHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				lib.WriteJSONResponse(w, http.StatusBadRequest, err)
 				return
 			}
+			lib.SanitizeInput(&user)
 			if err := uh.UserService.UpdateUser(ctx, user); err != nil {
 				lib.WriteJSONResponse(w, http.StatusInternalServerError, lib.HandlerResponse{Message: err.Error()})
 				return

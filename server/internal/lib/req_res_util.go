@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"reflect"
+	"strings"
 
 	"github.com/go-playground/validator/v10"
 )
@@ -45,4 +47,33 @@ func DecodeAndValidateRequest(r *http.Request, v interface{}) error {
 	}
 
 	return nil
+}
+
+func SanitizeInput(data interface{}) {
+	v := reflect.ValueOf(data)
+
+	// Ensure the input is a pointer to a struct
+	if v.Kind() != reflect.Ptr || v.Elem().Kind() != reflect.Struct {
+		return // Do nothing if it's not a pointer to a struct
+	}
+
+	// Get the underlying struct
+	v = v.Elem()
+
+	// Iterate through the fields of the struct
+	for i := 0; i < v.NumField(); i++ {
+		field := v.Field(i)
+
+		// Only process fields that are settable (exported fields)
+		if !field.CanSet() {
+			continue
+		}
+
+		// Handle string fields
+		if field.Kind() == reflect.String {
+			trimmed := strings.TrimSpace(field.String())
+			trimmed = strings.ReplaceAll(trimmed, " ", "")
+			field.SetString(trimmed)
+		}
+	}
 }
