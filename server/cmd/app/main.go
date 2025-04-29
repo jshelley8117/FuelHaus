@@ -22,7 +22,7 @@ func main() {
 	// Initialize App Dependencies here
 	firebaseServices, err := resource.InitializeFirebaseServices(ctx)
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatal(err)
 	}
 	defer firebaseServices.Firestore.Close()
 

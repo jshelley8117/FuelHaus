@@ -3,8 +3,10 @@ package service
 import (
 	"context"
 	"log"
+	"strings"
 	"time"
 
+	"cloud.google.com/go/firestore"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/jshelley8117/FuelHaus/internal/client"
@@ -94,8 +96,24 @@ func (us *UserService) DeleteUser(ctx context.Context, userId string) error {
 	return nil
 }
 
-func (us *UserService) UpdateUser(ctx context.Context, reqUser model.User) error {
+func (us *UserService) UpdateUser(ctx context.Context, u model.User) error {
 
+	var updates []firestore.Update
+	if strings.TrimSpace(u.FirstName) != "" {
+		updates = append(updates, firestore.Update{Path: "first_name", Value: u.FirstName})
+	}
+	if strings.TrimSpace(u.LastName) != "" {
+		updates = append(updates, firestore.Update{Path: "last_name", Value: u.LastName})
+	}
+	if strings.TrimSpace(u.Email) != "" {
+		updates = append(updates, firestore.Update{Path: "email", Value: u.Email})
+	}
+	if strings.TrimSpace(u.Password) != "" {
+		updates = append(updates, firestore.Update{Path: "password", Value: u.Password})
+	}
+	updates = append(updates, firestore.Update{Path: "updated_at", Value: time.Now()})
+
+	us.UserClient.UpdateUser(ctx, us.FirebaseService, u.UserId, updates)
 	return nil
 }
 

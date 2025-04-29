@@ -20,7 +20,7 @@ func NewUserHandler(userService service.IUserService) *UserHandler {
 // ServeHTTP is a UserHandler implementation of the net/http package's "ServeHTTP"
 // function, which used to route requests to /users endpoint based on the HTTP Method
 func (uh UserHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	log.Println("Entered User Handler")
+	log.Printf("Handling HTTP Request:\nMethod: %v\nPath: %v", r.Method, r.URL.Path)
 	ctx := r.Context()
 
 	switch r.Method {
@@ -63,24 +63,30 @@ func (uh UserHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				lib.WriteJSONResponse(w, http.StatusInternalServerError, lib.HandlerResponse{Message: err.Error()})
 				return
 			}
+			lib.WriteJSONResponse(w, http.StatusOK, nil)
+			return
 		} else {
 			lib.WriteJSONResponse(w, http.StatusBadRequest, lib.HandlerResponse{Message: "No matching User found with User ID"})
+			return
 		}
-		lib.WriteJSONResponse(w, http.StatusOK, nil)
-		return
 	case http.MethodPut:
-		var user model.User
-
-		if err := lib.DecodeAndValidateRequest(r, user); err != nil {
-			lib.WriteJSONResponse(w, http.StatusBadRequest, err)
+		if r.URL.Query().Has("uid") {
+			var user model.User
+			user.UserId = r.URL.Query().Get("uid")
+			if err := lib.DecodeAndValidateRequest(r, &user); err != nil {
+				lib.WriteJSONResponse(w, http.StatusBadRequest, err)
+				return
+			}
+			if err := uh.UserService.UpdateUser(ctx, user); err != nil {
+				lib.WriteJSONResponse(w, http.StatusInternalServerError, lib.HandlerResponse{Message: err.Error()})
+				return
+			}
+			lib.WriteJSONResponse(w, http.StatusOK, nil)
+			return
+		} else {
+			lib.WriteJSONResponse(w, http.StatusBadRequest, lib.HandlerResponse{Message: "No matching User found with User ID"})
 			return
 		}
-		if err := uh.UserService.UpdateUser(ctx, user); err != nil {
-			lib.WriteJSONResponse(w, http.StatusInternalServerError, lib.HandlerResponse{Message: err.Error()})
-			return
-		}
-		lib.WriteJSONResponse(w, http.StatusOK, nil)
-		return
 	default:
 		lib.WriteJSONResponse(w, http.StatusTeapot, lib.HandlerResponse{Message: "TEAPOT"})
 		return

@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 
+	"cloud.google.com/go/firestore"
 	"github.com/jshelley8117/FuelHaus/internal/model"
 	"github.com/jshelley8117/FuelHaus/internal/resource"
 	"google.golang.org/api/iterator"
@@ -58,6 +59,7 @@ func (uc *UserClient) FetchUserByEmail(ctx context.Context, firebaseServices res
 	}
 	var user model.User
 	if err := doc.DataTo(&user); err != nil {
+		log.Printf("Failed to fetch user by email in firestore: %v", err)
 		return model.User{}, err
 	}
 	user.UserId = doc.Ref.ID
@@ -69,6 +71,7 @@ func (uc *UserClient) CreateUser(ctx context.Context, firebaseServices resource.
 	firestoreClient := firebaseServices.Firestore
 	_, _, err := firestoreClient.Collection("users").Add(ctx, u)
 	if err != nil {
+		log.Printf("Failed to create user in firestore: %v", err)
 		return err
 	}
 	return nil
@@ -79,6 +82,18 @@ func (uc *UserClient) DeleteUser(ctx context.Context, firebaseServices resource.
 	firestoreClient := firebaseServices.Firestore
 	_, err := firestoreClient.Collection("users").Doc(userId).Delete(ctx)
 	if err != nil {
+		log.Printf("Failed to delete user in firestore: %v", err)
+		return err
+	}
+	return nil
+}
+
+func (uc *UserClient) UpdateUser(ctx context.Context, firebaseServices resource.FirebaseServices, uid string, updates []firestore.Update) error {
+	log.Println("Entered Client: UpdateUser")
+	firestoreClient := firebaseServices.Firestore
+	_, err := firestoreClient.Collection("users").Doc(uid).Update(ctx, updates)
+	if err != nil {
+		log.Printf("Failed to update user in firestore: %v", err)
 		return err
 	}
 	return nil
