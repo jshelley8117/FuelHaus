@@ -32,6 +32,7 @@ func NewAuthService(userService IUserService, firebaseService resource.FirebaseS
 	}
 }
 
+// Service Layer Implementation to perform Login Authentication
 func (as *AuthService) Login(ctx context.Context, ipAddr string, userAgent string, method string, email string) error {
 	// needs to perform a GET on the users table to ensure u exists in the users table
 	response, err := as.UserService.GetUserByEmail(ctx, email)
