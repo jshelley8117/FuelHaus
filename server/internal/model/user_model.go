@@ -12,3 +12,12 @@ type User struct {
 	UpdatedAt    time.Time `firestore:"updated_at" json:"updated_at"`
 	IsUserActive bool      `firestore:"is_active" json:"is_active"`
 }
+type UserResponse struct {
+	UserId       string
+	FirstName    string
+	LastName     string
+	Email        string
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+	IsUserActive bool
+}

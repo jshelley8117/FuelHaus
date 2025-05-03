@@ -15,8 +15,8 @@ import (
 )
 
 type IUserService interface {
-	GetAllUsers(ctx context.Context) ([]UserResponse, error)
-	GetUserByEmail(ctx context.Context, email string) (UserResponse, error)
+	GetAllUsers(ctx context.Context) ([]model.UserResponse, error)
+	GetUserByEmail(ctx context.Context, email string) (model.UserResponse, error)
 	CreateUser(ctx context.Context, reqUser model.User) error
 	DeleteUser(ctx context.Context, userId string) error
 	UpdateUser(ctx context.Context, reqUser model.User) error
@@ -27,16 +27,6 @@ type UserService struct {
 	FirebaseService resource.FirebaseServices
 }
 
-type UserResponse struct {
-	UserId       string
-	FirstName    string
-	LastName     string
-	Email        string
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
-	IsUserActive bool
-}
-
 func NewUserService(userClient client.UserClient, firebaseService resource.FirebaseServices) UserService {
 	return UserService{
 		UserClient:      userClient,
@@ -45,7 +35,7 @@ func NewUserService(userClient client.UserClient, firebaseService resource.Fireb
 }
 
 // Returns a slice of Users - TODO: Need to map to some user response so that we aren't returning unnecessary data.
-func (us *UserService) GetAllUsers(ctx context.Context) ([]UserResponse, error) {
+func (us *UserService) GetAllUsers(ctx context.Context) ([]model.UserResponse, error) {
 
 	fsUsers, err := us.UserClient.FetchAllUsers(ctx, us.FirebaseService)
 	if err != nil {
@@ -56,12 +46,12 @@ func (us *UserService) GetAllUsers(ctx context.Context) ([]UserResponse, error) 
 	return users, nil
 }
 
-func (us *UserService) GetUserByEmail(ctx context.Context, email string) (UserResponse, error) {
+func (us *UserService) GetUserByEmail(ctx context.Context, email string) (model.UserResponse, error) {
 	fsUser, err := us.UserClient.FetchUserByEmail(ctx, us.FirebaseService, email)
 	if err != nil {
-		return UserResponse{}, err
+		return model.UserResponse{}, err
 	}
-	return UserResponse{
+	return model.UserResponse{
 		UserId:       fsUser.UserId,
 		FirstName:    fsUser.FirstName,
 		LastName:     fsUser.LastName,
@@ -120,10 +110,10 @@ func (us *UserService) UpdateUser(ctx context.Context, u model.User) error {
 // PRIVATE FUNCTIONS BELOW
 
 // Maps Database Response for GetAllUsers to UserList model
-func mapUserModelToUserList(fsResp []model.User) []UserResponse {
-	var uList []UserResponse
+func mapUserModelToUserList(fsResp []model.User) []model.UserResponse {
+	var uList []model.UserResponse
 	for _, v := range fsResp {
-		uList = append(uList, UserResponse{
+		uList = append(uList, model.UserResponse{
 			UserId:       v.UserId,
 			FirstName:    v.FirstName,
 			LastName:     v.LastName,
