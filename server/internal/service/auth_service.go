@@ -2,17 +2,22 @@ package service
 
 import (
 	"context"
+	"log"
 	"time"
 
+	"firebase.google.com/go/v4/auth"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
 	"github.com/jshelley8117/FuelHaus/internal/client"
-	"github.com/jshelley8117/FuelHaus/internal/lib"
+	// "github.com/jshelley8117/FuelHaus/internal/lib"
 	"github.com/jshelley8117/FuelHaus/internal/model"
 	"github.com/jshelley8117/FuelHaus/internal/resource"
 )
 
 type IAuthService interface {
-	Login(ctx context.Context, ipAddr string, userAgent string, method string, email string) error
-	Register(ctx context.Context, ipAddr string, userAgent string, method string, u model.User) error
+	AuthenticateExistingUser(ctx context.Context, ipAddr, userAgent, method, email, pw string) (string, error)
+	AuthenticateNewUser(ctx context.Context, ipAddr string, userAgent string, method string, u model.User) (string, error)
 }
 
 type AuthService struct {
@@ -33,30 +38,98 @@ func NewAuthService(userService IUserService, firebaseService resource.FirebaseS
 }
 
 // Service Layer Implementation to perform Login Authentication
-func (as *AuthService) Login(ctx context.Context, ipAddr string, userAgent string, method string, email string) error {
-	// needs to perform a GET on the users table to ensure u exists in the users table
-	response, err := as.UserService.GetUserByEmail(ctx, email)
+func (as *AuthService) AuthenticateExistingUser(ctx context.Context, ipAddr, userAgent, method, email, pw string) (string, error) {
+	log.Println("Entered AuthenticateExistingUser")
+	fbAuthClient := as.FirebaseService.Auth
+	// var status string
+
+	// verify user in firebase auth -> checks to see if email exists in firestore
+	userRecord, err := fbAuthClient.GetUserByEmail(ctx, email)
 	if err != nil {
-		return err
+		// status = handleFirebaseAuthError(err)
+		// if authErr := as.logAuthRequest(ctx, email, ipAddr, userAgent, method, lib.LOGIN, status); authErr != nil {
+		// 	return "", authErr
+		// }
+		return "", err
 	}
-	// after a successful GET on users table, perform a POST to the authentication table to log a successful authentication
-	authAttempt := model.AuthFirestoreRequest{
-		UserId:    response.UserId,
-		Email:     response.Email,
+	// status = lib.SUCCESSS
+
+	// if err := as.logAuthRequest(ctx, email, ipAddr, userAgent, method, lib.LOGIN, status); err != nil {
+	// 	return "", err
+	// }
+
+	jwt, err := generateJWT(ctx, fbAuthClient, userRecord.UID)
+	if err != nil {
+		return "", nil
+	}
+	return jwt, nil
+}
+
+func (as *AuthService) AuthenticateNewUser(ctx context.Context, ipAddr string, userAgent string, method string, u model.User) (string, error) {
+	log.Println("Entered AuthenticateNewUser")
+	fbAuthClient := as.FirebaseService.Auth
+
+	// create params for firebase auth create user request
+	params := (&auth.UserToCreate{}).
+		Email(u.Email).
+		Password(u.Password).
+		EmailVerified(false).
+		Disabled(u.IsUserActive)
+
+	userRecord, err := fbAuthClient.CreateUser(ctx, params)
+	if err != nil {
+		return "", err
+	}
+	u.UserId = userRecord.UID
+	u.Password = "REDACTED"
+
+	// store newly created user in internal Firestore
+	if err := as.UserService.CreateUser(ctx, u); err != nil {
+		return "", err
+	}
+
+	// if err := as.logAuthRequest(ctx, u.Email, ipAddr, userAgent, method, lib.REGISTER, lib.SUCCESSS); err != nil {
+	// 	return "", err
+	// }
+
+	jwt, err := generateJWT(ctx, fbAuthClient, userRecord.UID)
+	if err != nil {
+		return "", err
+	}
+	return jwt, nil
+}
+
+// func (as *AuthService) logAuthRequest(ctx context.Context, email, ipAddr, userAgent, method, authType, status string) error {
+// 	authAttempt := generateAuthRequestPayload(email, ipAddr, userAgent, method, authType)
+// 	authAttempt.Status = status
+// 	if err := as.AuthClient.CreateAuthenticationRequest(ctx, as.FirebaseService, authAttempt); err != nil {
+// 		return err
+// 	}
+// 	return nil
+// }
+
+func generateAuthRequestPayload(email, ipAddr, userAgent, method, authType string) model.AuthFirestoreRequest {
+	return model.AuthFirestoreRequest{
+		Email:     email,
 		CreatedAt: time.Now(),
 		IPAddress: ipAddr,
 		UserAgent: userAgent,
-		Status:    lib.SUCCESSS,
 		Method:    method,
+		AuthType:  authType,
 	}
-	as.AuthClient.CreateLoginRequest(ctx, as.FirebaseService, authAttempt)
-	return nil
 }
 
-func (as *AuthService) Register(ctx context.Context, ipAddr string, userAgent string, method string, u model.User) error {
-	// needs to perform a POST to the users table
+func generateJWT(ctx context.Context, fbAuthClient *auth.Client, uid string) (string, error) {
+	jwtToken, err := fbAuthClient.CustomToken(ctx, uid)
+	if err != nil {
+		return "", nil
+	}
+	return jwtToken, nil
+}
 
-	// after a successful POST to the users table, perform a POST to the authentication table to log a successful authentication
-
-	return nil
+func handleFirebaseAuthError(err error) string {
+	if status.Code(err) == codes.NotFound {
+		return "Email does not exist"
+	}
+	return "Firebase Auth Error: " + err.Error()
 }

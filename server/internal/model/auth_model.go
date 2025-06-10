@@ -6,8 +6,6 @@ import (
 
 // TODO: need to define struct tags
 type AuthFirestoreRequest struct {
-	AuthId    string
-	UserId    string
 	Email     string
 	CreatedAt time.Time
 	IPAddress string
@@ -15,6 +13,7 @@ type AuthFirestoreRequest struct {
 	Status    string
 	Location  string // can be for future implementation
 	Method    string
+	AuthType  string
 }
 
 type AuthRequest struct {

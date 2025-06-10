@@ -6,8 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"cloud.google.com/go/firestore"
 	"golang.org/x/crypto/bcrypt"
+
+	"cloud.google.com/go/firestore"
 
 	"github.com/jshelley8117/FuelHaus/internal/client"
 	"github.com/jshelley8117/FuelHaus/internal/model"
@@ -20,6 +21,7 @@ type IUserService interface {
 	CreateUser(ctx context.Context, reqUser model.User) error
 	DeleteUser(ctx context.Context, userId string) error
 	UpdateUser(ctx context.Context, reqUser model.User) error
+	GetUserByEmailWithHPW(ctx context.Context, email string) (model.User, error)
 }
 
 type UserService struct {
@@ -64,15 +66,23 @@ func (us *UserService) GetUserByEmail(ctx context.Context, email string) (model.
 
 func (us *UserService) CreateUser(ctx context.Context, reqUser model.User) error {
 	log.Println("Entered Service: CreateUser")
-	hpw, err := hashPassword(reqUser.Password)
-	if err != nil {
-		return err
-	}
-	reqUser.Password = hpw
+	// hpw, err := hashPassword(reqUser.Password)
+	// if err != nil {
+	// 	return err
+	// }
+	// reqUser.Password = hpw
 	reqUser.CreatedAt = time.Now()
 	reqUser.UpdatedAt = time.Now()
 	reqUser.IsUserActive = true
-	if err := us.UserClient.CreateUser(ctx, us.FirebaseService, reqUser); err != nil {
+	if err := us.UserClient.CreateUser(ctx, us.FirebaseService, model.User{
+		CreatedAt:    reqUser.CreatedAt,
+		Email:        reqUser.Email,
+		FirstName:    reqUser.FirstName,
+		LastName:     reqUser.LastName,
+		IsUserActive: reqUser.IsUserActive,
+		UpdatedAt:    reqUser.UpdatedAt,
+		UserId:       reqUser.UserId,
+	}); err != nil {
 		return err
 	}
 	return nil
@@ -105,6 +115,23 @@ func (us *UserService) UpdateUser(ctx context.Context, u model.User) error {
 
 	us.UserClient.UpdateUser(ctx, us.FirebaseService, u.UserId, updates)
 	return nil
+}
+
+func (us *UserService) GetUserByEmailWithHPW(ctx context.Context, email string) (model.User, error) {
+	fsUser, err := us.UserClient.FetchUserByEmail(ctx, us.FirebaseService, email)
+	if err != nil {
+		return model.User{}, err
+	}
+	return model.User{
+		UserId:       fsUser.UserId,
+		FirstName:    fsUser.FirstName,
+		LastName:     fsUser.LastName,
+		Email:        fsUser.Email,
+		Password:     fsUser.Password,
+		IsUserActive: fsUser.IsUserActive,
+		CreatedAt:    fsUser.CreatedAt,
+		UpdatedAt:    fsUser.UpdatedAt,
+	}, nil
 }
 
 // PRIVATE FUNCTIONS BELOW

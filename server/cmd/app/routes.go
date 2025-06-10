@@ -15,5 +15,10 @@ func SetupRoutes(mux *http.ServeMux, firebaseServices resource.FirebaseServices)
 	userService := service.NewUserService(userClient, firebaseServices)
 	userHandler := handler.NewUserHandler(&userService)
 
+	authClient := client.NewAuthClient()
+	authService := service.NewAuthService(&userService, firebaseServices, authClient)
+	authHandler := handler.NewAuthHandler(&authService)
+
 	mux.Handle("/users", userHandler)
+	mux.Handle("/auth/", authHandler)
 }

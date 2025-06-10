@@ -3,6 +3,7 @@ package handler
 import (
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/jshelley8117/FuelHaus/internal/lib"
 	"github.com/jshelley8117/FuelHaus/internal/model"
@@ -22,7 +23,14 @@ func (ah AuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Handling HTTP Request:\nMethod: %v\nPath: %v", r.Method, r.URL.Path)
 	ctx := r.Context()
 
-	switch r.URL.Path {
+	if !strings.HasPrefix(r.URL.Path, "/auth/") {
+		lib.WriteJSONResponse(w, http.StatusNotFound, lib.HandlerResponse{Message: "Endpoint not found"})
+		return
+	}
+
+	action := strings.TrimPrefix(r.URL.Path, "/auth/")
+
+	switch action {
 	case "login":
 		var auth model.AuthRequest
 		if err := lib.DecodeAndValidateRequest(r, &auth); err != nil {
@@ -33,11 +41,13 @@ func (ah AuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		userAgent := r.Header.Get("User-Agent")
 		method := r.Method
 		email := auth.Email
-		if err := ah.AuthService.Login(ctx, iPAddr, userAgent, method, email); err != nil {
-			lib.WriteJSONResponse(w, http.StatusInternalServerError, lib.HandlerResponse{Message: err.Error()})
+		pw := auth.Password
+		jwt, err := ah.AuthService.AuthenticateExistingUser(ctx, iPAddr, userAgent, method, email, pw)
+		if err != nil {
+			lib.WriteJSONResponse(w, http.StatusInternalServerError, lib.HandlerResponse{Message: err.Error(), Token: nil, Data: nil})
 			return
 		}
-		lib.WriteJSONResponse(w, http.StatusOK, lib.HandlerResponse{Message: "Login Successful"})
+		lib.WriteJSONResponse(w, http.StatusOK, lib.HandlerResponse{Message: "Login Successful", Token: &jwt, Data: nil})
 		return
 	case "register":
 		var user model.User
@@ -48,11 +58,13 @@ func (ah AuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		iPAddr := r.RemoteAddr
 		userAgent := r.Header.Get("User-Agent")
 		method := r.Method
-		if err := ah.AuthService.Register(ctx, iPAddr, userAgent, method, user); err != nil {
-			lib.WriteJSONResponse(w, http.StatusInternalServerError, lib.HandlerResponse{Message: err.Error()})
+		jwt, err := ah.AuthService.AuthenticateNewUser(ctx, iPAddr, userAgent, method, user)
+		if err != nil {
+			lib.WriteJSONResponse(w, http.StatusInternalServerError, lib.HandlerResponse{Message: err.Error(), Token: nil, Data: nil})
 			return
 		}
-		lib.WriteJSONResponse(w, http.StatusOK, lib.HandlerResponse{Message: "Registration Successful"})
+
+		lib.WriteJSONResponse(w, http.StatusOK, lib.HandlerResponse{Message: "Registration Successful", Token: &jwt, Data: nil})
 		return
 	}
 }

@@ -13,11 +13,11 @@ func NewAuthClient() AuthClient {
 	return AuthClient{}
 }
 
-func (ac *AuthClient) CreateLoginRequest(ctx context.Context, firebaseService resource.FirebaseServices, a model.AuthFirestoreRequest) {
+func (ac *AuthClient) CreateAuthenticationRequest(ctx context.Context, firebaseService resource.FirebaseServices, a model.AuthFirestoreRequest) error {
 	firestoreClient := firebaseService.Firestore
-	firestoreClient.Doc("auth").Create(ctx, a)
-}
-
-func (ac *AuthClient) CreateRegisterRequest() {
-
+	_, _, err := firestoreClient.Collection("auth_history").Add(ctx, a)
+	if err != nil {
+		return err
+	}
+	return nil
 }

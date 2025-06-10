@@ -12,13 +12,27 @@ import (
 )
 
 type HandlerResponse struct {
-	Message string
+	Message string      `json:"message"`
+	Token   *string     `json:"token,omitempty"`
+	Data    interface{} `json:"data,omitempty"`
 }
 
 // WriteJSONResponse writes a response to the client
-func WriteJSONResponse(w http.ResponseWriter, statusCode int, v interface{}) {
+func WriteJSONResponse(w http.ResponseWriter, statusCode int, v interface{}, optHeaders ...map[string]string) {
+	// Set default Content-Type header
 	w.Header().Set("Content-Type", "application/json")
+
+	// Add optional headers if provided
+	if len(optHeaders) > 0 {
+		for key, value := range optHeaders[0] {
+			w.Header().Set(key, value)
+		}
+	}
+
+	// Write the status code
 	w.WriteHeader(statusCode)
+
+	// Encode the response body
 	if v != nil {
 		if err := json.NewEncoder(w).Encode(v); err != nil {
 			log.Printf("Failed to encode JSON response: %v", err)
@@ -26,7 +40,6 @@ func WriteJSONResponse(w http.ResponseWriter, statusCode int, v interface{}) {
 			w.Write(errResp)
 		}
 	}
-
 }
 
 // DecodeAndValidateRequest takes in a request object (r) and a struct (v)
