@@ -6,8 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"cloud.google.com/go/firestore"
 	"golang.org/x/crypto/bcrypt"
+
+	"cloud.google.com/go/firestore"
 
 	"github.com/jshelley8117/FuelHaus/internal/client"
 	"github.com/jshelley8117/FuelHaus/internal/model"
@@ -15,26 +16,17 @@ import (
 )
 
 type IUserService interface {
-	GetAllUsers(ctx context.Context) ([]UserResponse, error)
-	GetUserByEmail(ctx context.Context, email string) (UserResponse, error)
+	GetAllUsers(ctx context.Context) ([]model.UserResponse, error)
+	GetUserByEmail(ctx context.Context, email string) (model.UserResponse, error)
 	CreateUser(ctx context.Context, reqUser model.User) error
 	DeleteUser(ctx context.Context, userId string) error
 	UpdateUser(ctx context.Context, reqUser model.User) error
+	GetUserByEmailWithHPW(ctx context.Context, email string) (model.User, error)
 }
 
 type UserService struct {
 	UserClient      client.UserClient
 	FirebaseService resource.FirebaseServices
-}
-
-type UserResponse struct {
-	UserId       string
-	FirstName    string
-	LastName     string
-	Email        string
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
-	IsUserActive bool
 }
 
 func NewUserService(userClient client.UserClient, firebaseService resource.FirebaseServices) UserService {
@@ -45,7 +37,7 @@ func NewUserService(userClient client.UserClient, firebaseService resource.Fireb
 }
 
 // Returns a slice of Users - TODO: Need to map to some user response so that we aren't returning unnecessary data.
-func (us *UserService) GetAllUsers(ctx context.Context) ([]UserResponse, error) {
+func (us *UserService) GetAllUsers(ctx context.Context) ([]model.UserResponse, error) {
 
 	fsUsers, err := us.UserClient.FetchAllUsers(ctx, us.FirebaseService)
 	if err != nil {
@@ -56,12 +48,12 @@ func (us *UserService) GetAllUsers(ctx context.Context) ([]UserResponse, error) 
 	return users, nil
 }
 
-func (us *UserService) GetUserByEmail(ctx context.Context, email string) (UserResponse, error) {
+func (us *UserService) GetUserByEmail(ctx context.Context, email string) (model.UserResponse, error) {
 	fsUser, err := us.UserClient.FetchUserByEmail(ctx, us.FirebaseService, email)
 	if err != nil {
-		return UserResponse{}, err
+		return model.UserResponse{}, err
 	}
-	return UserResponse{
+	return model.UserResponse{
 		UserId:       fsUser.UserId,
 		FirstName:    fsUser.FirstName,
 		LastName:     fsUser.LastName,
@@ -74,15 +66,23 @@ func (us *UserService) GetUserByEmail(ctx context.Context, email string) (UserRe
 
 func (us *UserService) CreateUser(ctx context.Context, reqUser model.User) error {
 	log.Println("Entered Service: CreateUser")
-	hpw, err := hashPassword(reqUser.Password)
-	if err != nil {
-		return err
-	}
-	reqUser.Password = hpw
+	// hpw, err := hashPassword(reqUser.Password)
+	// if err != nil {
+	// 	return err
+	// }
+	// reqUser.Password = hpw
 	reqUser.CreatedAt = time.Now()
 	reqUser.UpdatedAt = time.Now()
 	reqUser.IsUserActive = true
-	if err := us.UserClient.CreateUser(ctx, us.FirebaseService, reqUser); err != nil {
+	if err := us.UserClient.CreateUser(ctx, us.FirebaseService, model.User{
+		CreatedAt:    reqUser.CreatedAt,
+		Email:        reqUser.Email,
+		FirstName:    reqUser.FirstName,
+		LastName:     reqUser.LastName,
+		IsUserActive: reqUser.IsUserActive,
+		UpdatedAt:    reqUser.UpdatedAt,
+		UserId:       reqUser.UserId,
+	}); err != nil {
 		return err
 	}
 	return nil
@@ -117,13 +117,30 @@ func (us *UserService) UpdateUser(ctx context.Context, u model.User) error {
 	return nil
 }
 
+func (us *UserService) GetUserByEmailWithHPW(ctx context.Context, email string) (model.User, error) {
+	fsUser, err := us.UserClient.FetchUserByEmail(ctx, us.FirebaseService, email)
+	if err != nil {
+		return model.User{}, err
+	}
+	return model.User{
+		UserId:       fsUser.UserId,
+		FirstName:    fsUser.FirstName,
+		LastName:     fsUser.LastName,
+		Email:        fsUser.Email,
+		Password:     fsUser.Password,
+		IsUserActive: fsUser.IsUserActive,
+		CreatedAt:    fsUser.CreatedAt,
+		UpdatedAt:    fsUser.UpdatedAt,
+	}, nil
+}
+
 // PRIVATE FUNCTIONS BELOW
 
 // Maps Database Response for GetAllUsers to UserList model
-func mapUserModelToUserList(fsResp []model.User) []UserResponse {
-	var uList []UserResponse
+func mapUserModelToUserList(fsResp []model.User) []model.UserResponse {
+	var uList []model.UserResponse
 	for _, v := range fsResp {
-		uList = append(uList, UserResponse{
+		uList = append(uList, model.UserResponse{
 			UserId:       v.UserId,
 			FirstName:    v.FirstName,
 			LastName:     v.LastName,

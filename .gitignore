@@ -1,0 +1,7 @@
+# Ignore all .env files in this directory and subdirectories
+*.env
+/server/*.env
+/ui/*.env
+
+# Ignore docs folder
+/server/docs/*
