@@ -4,21 +4,28 @@ import (
 	"net/http"
 
 	"github.com/jshelley8117/FuelHaus/internal/client"
-	"github.com/jshelley8117/FuelHaus/internal/handler"
+	v1 "github.com/jshelley8117/FuelHaus/internal/handler/v1"
 	"github.com/jshelley8117/FuelHaus/internal/resource"
 	"github.com/jshelley8117/FuelHaus/internal/service"
 )
 
 func SetupRoutes(mux *http.ServeMux, firebaseServices resource.FirebaseServices) {
 
+	// users API
 	userClient := client.NewUserClient()
 	userService := service.NewUserService(userClient, firebaseServices)
-	userHandler := handler.NewUserHandler(&userService)
+	v1UserHandler := v1.NewUserHandler(&userService)
 
+	// v1 users routes
+	mux.Handle("/users", v1UserHandler)
+
+	// v2 users routes
+
+	// auth API
 	authClient := client.NewAuthClient()
 	authService := service.NewAuthService(&userService, firebaseServices, authClient)
-	authHandler := handler.NewAuthHandler(&authService)
+	v1AuthHandler := v1.NewAuthHandler(&authService)
 
-	mux.Handle("/users", userHandler)
-	mux.Handle("/auth/", authHandler)
+	// v1 auth routes
+	mux.Handle("/auth/", v1AuthHandler)
 }
