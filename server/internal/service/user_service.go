@@ -76,7 +76,7 @@ func (us *UserService) CreateUser(ctx context.Context, reqUser model.User) error
 	reqUser.IsUserActive = true
 	if err := us.UserClient.CreateUser(ctx, us.FirebaseService, model.User{
 		CreatedAt:    reqUser.CreatedAt,
-		Email:        reqUser.Email,
+		Email:        strings.ToLower(reqUser.Email),
 		FirstName:    reqUser.FirstName,
 		LastName:     reqUser.LastName,
 		IsUserActive: reqUser.IsUserActive,

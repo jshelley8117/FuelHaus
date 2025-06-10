@@ -79,6 +79,7 @@ func (uc *UserClient) CreateUser(ctx context.Context, firebaseServices resource.
 
 func (uc *UserClient) DeleteUser(ctx context.Context, firebaseServices resource.FirebaseServices, userId string) error {
 	log.Println("Entered Client: DeleteUser")
+	// TODO: Need to add functionality that also deletes the user from firebase auth service
 	firestoreClient := firebaseServices.Firestore
 	_, err := firestoreClient.Collection("users").Doc(userId).Delete(ctx)
 	if err != nil {
