@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"firebase.google.com/go/v4/auth"
 	"golang.org/x/crypto/bcrypt"
 
 	"cloud.google.com/go/firestore"
@@ -18,34 +19,31 @@ import (
 type IUserService interface {
 	GetAllUsers(ctx context.Context) ([]model.UserResponse, error)
 	GetUserByEmail(ctx context.Context, email string) (model.UserResponse, error)
-	CreateUser(ctx context.Context, reqUser model.User) error
+	CreateUser(ctx context.Context, reqUser model.User, uid string) error
 	DeleteUser(ctx context.Context, userId string) error
-	UpdateUser(ctx context.Context, reqUser model.User) error
-	GetUserByEmailWithHPW(ctx context.Context, email string) (model.User, error)
+	UpdateUser(ctx context.Context, reqUser model.User, uid string) error
 }
 
 type UserService struct {
-	UserClient      client.UserClient
+	UserClient      *client.UserClient
 	FirebaseService resource.FirebaseServices
 }
 
-func NewUserService(userClient client.UserClient, firebaseService resource.FirebaseServices) UserService {
-	return UserService{
+func NewUserService(userClient *client.UserClient, firebaseService resource.FirebaseServices) *UserService {
+	return &UserService{
 		UserClient:      userClient,
 		FirebaseService: firebaseService,
 	}
 }
 
-// Returns a slice of Users - TODO: Need to map to some user response so that we aren't returning unnecessary data.
+// Returns a slice of Users
 func (us *UserService) GetAllUsers(ctx context.Context) ([]model.UserResponse, error) {
-
 	fsUsers, err := us.UserClient.FetchAllUsers(ctx, us.FirebaseService)
 	if err != nil {
 		return nil, err
 	}
-	users := mapUserModelToUserList(fsUsers)
 
-	return users, nil
+	return fsUsers, nil
 }
 
 func (us *UserService) GetUserByEmail(ctx context.Context, email string) (model.UserResponse, error) {
@@ -64,24 +62,19 @@ func (us *UserService) GetUserByEmail(ctx context.Context, email string) (model.
 	}, nil
 }
 
-func (us *UserService) CreateUser(ctx context.Context, reqUser model.User) error {
+func (us *UserService) CreateUser(ctx context.Context, reqUser model.User, uid string) error {
 	log.Println("Entered Service: CreateUser")
-	// hpw, err := hashPassword(reqUser.Password)
-	// if err != nil {
-	// 	return err
-	// }
-	// reqUser.Password = hpw
+
 	reqUser.CreatedAt = time.Now()
 	reqUser.UpdatedAt = time.Now()
 	reqUser.IsUserActive = true
-	if err := us.UserClient.CreateUser(ctx, us.FirebaseService, model.User{
+	if err := us.UserClient.CreateUser(ctx, us.FirebaseService, uid, model.User{
 		CreatedAt:    reqUser.CreatedAt,
 		Email:        strings.ToLower(reqUser.Email),
 		FirstName:    reqUser.FirstName,
 		LastName:     reqUser.LastName,
 		IsUserActive: reqUser.IsUserActive,
 		UpdatedAt:    reqUser.UpdatedAt,
-		UserId:       reqUser.UserId,
 	}); err != nil {
 		return err
 	}
@@ -90,13 +83,19 @@ func (us *UserService) CreateUser(ctx context.Context, reqUser model.User) error
 
 func (us *UserService) DeleteUser(ctx context.Context, userId string) error {
 	log.Println("Entered Service: DeleteUser")
+
 	if err := us.UserClient.DeleteUser(ctx, us.FirebaseService, userId); err != nil {
 		return err
 	}
+
+	if err := us.FirebaseService.Auth.DeleteUser(ctx, userId); err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func (us *UserService) UpdateUser(ctx context.Context, u model.User) error {
+func (us *UserService) UpdateUser(ctx context.Context, u model.User, uid string) error {
 
 	var updates []firestore.Update
 	if strings.TrimSpace(u.FirstName) != "" {
@@ -113,25 +112,25 @@ func (us *UserService) UpdateUser(ctx context.Context, u model.User) error {
 	}
 	updates = append(updates, firestore.Update{Path: "updated_at", Value: time.Now()})
 
-	us.UserClient.UpdateUser(ctx, us.FirebaseService, u.UserId, updates)
-	return nil
-}
-
-func (us *UserService) GetUserByEmailWithHPW(ctx context.Context, email string) (model.User, error) {
-	fsUser, err := us.UserClient.FetchUserByEmail(ctx, us.FirebaseService, email)
-	if err != nil {
-		return model.User{}, err
+	// Update Firestore Document
+	if err := us.UserClient.UpdateUser(ctx, us.FirebaseService, u.UserId, updates); err != nil {
+		return err
 	}
-	return model.User{
-		UserId:       fsUser.UserId,
-		FirstName:    fsUser.FirstName,
-		LastName:     fsUser.LastName,
-		Email:        fsUser.Email,
-		Password:     fsUser.Password,
-		IsUserActive: fsUser.IsUserActive,
-		CreatedAt:    fsUser.CreatedAt,
-		UpdatedAt:    fsUser.UpdatedAt,
-	}, nil
+
+	// Update Firebase Auth User
+	userToUpdate := (&auth.UserToUpdate{}).
+		Email(u.Email).
+		DisplayName(u.FirstName + " " + u.LastName)
+
+	if strings.TrimSpace(u.Password) != "" {
+		userToUpdate = userToUpdate.Password(u.Password)
+	}
+
+	if _, err := us.FirebaseService.Auth.UpdateUser(ctx, uid, userToUpdate); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // PRIVATE FUNCTIONS BELOW
@@ -141,7 +140,6 @@ func mapUserModelToUserList(fsResp []model.User) []model.UserResponse {
 	var uList []model.UserResponse
 	for _, v := range fsResp {
 		uList = append(uList, model.UserResponse{
-			UserId:       v.UserId,
 			FirstName:    v.FirstName,
 			LastName:     v.LastName,
 			Email:        v.Email,

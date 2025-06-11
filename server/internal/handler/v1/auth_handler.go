@@ -19,16 +19,16 @@ func NewAuthHandler(authService service.IAuthService) *AuthHandler {
 }
 
 // Responsible for user login and registration
-func (ah AuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (ah *AuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Handling HTTP Request:\nMethod: %v\nPath: %v", r.Method, r.URL.Path)
 	ctx := r.Context()
 
-	if !strings.HasPrefix(r.URL.Path, "/auth/") {
+	if !strings.HasPrefix(r.URL.Path, "/api/v1/auth/") {
 		lib.WriteJSONResponse(w, http.StatusNotFound, lib.HandlerResponse{Message: "Endpoint not found"})
 		return
 	}
 
-	action := strings.TrimPrefix(r.URL.Path, "/auth/")
+	action := strings.TrimPrefix(r.URL.Path, "/api/v1/auth/")
 
 	switch action {
 	case "login":

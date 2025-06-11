@@ -9,8 +9,8 @@ import (
 
 type AuthClient struct{}
 
-func NewAuthClient() AuthClient {
-	return AuthClient{}
+func NewAuthClient() *AuthClient {
+	return &AuthClient{}
 }
 
 func (ac *AuthClient) CreateAuthenticationRequest(ctx context.Context, firebaseService resource.FirebaseServices, a model.AuthFirestoreRequest) error {

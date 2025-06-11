@@ -26,6 +26,7 @@ func (uh *UserHandler) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 		lib.WriteJSONResponse(w, http.StatusInternalServerError, lib.HandlerResponse{Message: err.Error()})
 		return
 	}
+
 	lib.WriteJSONResponse(w, http.StatusOK, users)
 }
 
@@ -38,28 +39,29 @@ func (uh *UserHandler) GetUserByEmail(w http.ResponseWriter, r *http.Request) {
 		lib.WriteJSONResponse(w, http.StatusInternalServerError, lib.HandlerResponse{Message: err.Error()})
 		return
 	}
+
 	lib.WriteJSONResponse(w, http.StatusOK, user)
 }
 
-func (uh *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
-	log.Printf("Handling HTTP Request:\nMethod: %v\nPath: %v", r.Method, r.URL.Path)
-	ctx := r.Context()
-	var user model.User
+// func (uh *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
+// 	log.Printf("Handling HTTP Request:\nMethod: %v\nPath: %v", r.Method, r.URL.Path)
+// 	ctx := r.Context()
+// 	var user model.User
 
-	if err := lib.DecodeAndValidateRequest(r, &user); err != nil {
-		lib.WriteJSONResponse(w, http.StatusBadRequest, err)
-		return
-	}
+// 	if err := lib.DecodeAndValidateRequest(r, &user); err != nil {
+// 		lib.WriteJSONResponse(w, http.StatusBadRequest, err)
+// 		return
+// 	}
 
-	lib.SanitizeInput(&user)
+// 	lib.SanitizeInput(&user)
 
-	if err := uh.UserService.CreateUser(ctx, user); err != nil {
-		lib.WriteJSONResponse(w, http.StatusInternalServerError, lib.HandlerResponse{Message: err.Error()})
-		return
-	}
+// 	if err := uh.UserService.CreateUser(ctx, user, user.UserId); err != nil {
+// 		lib.WriteJSONResponse(w, http.StatusInternalServerError, lib.HandlerResponse{Message: err.Error()})
+// 		return
+// 	}
 
-	lib.WriteJSONResponse(w, http.StatusOK, nil)
-}
+// 	lib.WriteJSONResponse(w, http.StatusOK, nil)
+// }
 
 func (uh *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Handling HTTP Request:\nMethod: %v\nPath: %v", r.Method, r.URL.Path)
@@ -77,6 +79,7 @@ func (uh *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Handling HTTP Request:\nMethod: %v\nPath: %v", r.Method, r.URL.Path)
 	ctx := r.Context()
 	var user model.User
+	// TODO: Need to analyze whether or not this is needed, or if the model stored in DB needs an ID field since one is supplied by Firestore itself
 	user.UserId = r.PathValue("uid")
 
 	if err := lib.DecodeAndValidateRequest(r, &user); err != nil {
@@ -85,7 +88,7 @@ func (uh *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	lib.SanitizeInput(&user)
-	if err := uh.UserService.UpdateUser(ctx, user); err != nil {
+	if err := uh.UserService.UpdateUser(ctx, user, user.UserId); err != nil {
 		lib.WriteJSONResponse(w, http.StatusInternalServerError, lib.HandlerResponse{Message: err.Error()})
 		return
 	}
