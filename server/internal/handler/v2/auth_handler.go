@@ -52,5 +52,9 @@ func (ah *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	lib.WriteJSONResponse(w, http.StatusOK, lib.HandlerResponse{Message: "Registration Successful", Data: &jwt})
+	lib.WriteJSONResponse(w, http.StatusOK, lib.HandlerResponse{
+		Message: "Registration Successful",
+		Data: map[string]any{
+			"token": &jwt,
+		}})
 }

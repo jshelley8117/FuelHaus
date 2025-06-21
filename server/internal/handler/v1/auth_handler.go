@@ -44,10 +44,14 @@ func (ah *AuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		pw := auth.Password
 		jwt, err := ah.AuthService.AuthenticateExistingUser(ctx, iPAddr, userAgent, method, email, pw)
 		if err != nil {
-			lib.WriteJSONResponse(w, http.StatusInternalServerError, lib.HandlerResponse{Message: err.Error(), Token: nil, Data: nil})
+			lib.WriteJSONResponse(w, http.StatusInternalServerError, lib.HandlerResponse{Message: err.Error(), Data: nil})
 			return
 		}
-		lib.WriteJSONResponse(w, http.StatusOK, lib.HandlerResponse{Message: "Login Successful", Token: &jwt, Data: nil})
+		lib.WriteJSONResponse(w, http.StatusOK, lib.HandlerResponse{
+			Message: "Login Successful",
+			Data: map[string]any{
+				"token": &jwt,
+			}})
 		return
 	case "register":
 		var user model.User
@@ -60,11 +64,15 @@ func (ah *AuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		method := r.Method
 		jwt, err := ah.AuthService.AuthenticateNewUser(ctx, iPAddr, userAgent, method, user)
 		if err != nil {
-			lib.WriteJSONResponse(w, http.StatusInternalServerError, lib.HandlerResponse{Message: err.Error(), Token: nil, Data: nil})
+			lib.WriteJSONResponse(w, http.StatusInternalServerError, lib.HandlerResponse{Message: err.Error(), Data: nil})
 			return
 		}
 
-		lib.WriteJSONResponse(w, http.StatusOK, lib.HandlerResponse{Message: "Registration Successful", Token: &jwt, Data: nil})
+		lib.WriteJSONResponse(w, http.StatusOK, lib.HandlerResponse{
+			Message: "Registration Successful",
+			Data: map[string]any{
+				"token": &jwt,
+			}})
 		return
 	}
 }
