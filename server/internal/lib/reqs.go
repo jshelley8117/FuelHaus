@@ -12,13 +12,12 @@ import (
 )
 
 type HandlerResponse struct {
-	Message string      `json:"message"`
-	Token   *string     `json:"token,omitempty"`
-	Data    interface{} `json:"data,omitempty"`
+	Message string `json:"message"`
+	Data    any    `json:"data,omitempty"`
 }
 
 // WriteJSONResponse writes a response to the client
-func WriteJSONResponse(w http.ResponseWriter, statusCode int, v interface{}, optHeaders ...map[string]string) {
+func WriteJSONResponse(w http.ResponseWriter, statusCode int, v any, optHeaders ...map[string]string) {
 	// Set default Content-Type header
 	w.Header().Set("Content-Type", "application/json")
 
@@ -45,7 +44,7 @@ func WriteJSONResponse(w http.ResponseWriter, statusCode int, v interface{}, opt
 // DecodeAndValidateRequest takes in a request object (r) and a struct (v)
 // and decodes the request body into the struct interface and then validates
 // the fields in the struct
-func DecodeAndValidateRequest(r *http.Request, v interface{}) error {
+func DecodeAndValidateRequest(r *http.Request, v any) error {
 	validate := validator.New()
 	if err := json.NewDecoder(r.Body).Decode(v); err != nil {
 		errMsg := fmt.Errorf("%s: %w", ERR_DECODE_REQ_FAILURE, err)
@@ -62,7 +61,7 @@ func DecodeAndValidateRequest(r *http.Request, v interface{}) error {
 	return nil
 }
 
-func SanitizeInput(data interface{}) {
+func SanitizeInput(data any) {
 	v := reflect.ValueOf(data)
 
 	// Ensure the input is a pointer to a struct

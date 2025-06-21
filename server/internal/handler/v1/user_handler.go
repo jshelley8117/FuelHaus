@@ -1,4 +1,4 @@
-package handler
+package v1
 
 import (
 	"log"
@@ -19,7 +19,7 @@ func NewUserHandler(userService service.IUserService) *UserHandler {
 
 // ServeHTTP is a UserHandler implementation of the net/http package's "ServeHTTP"
 // function, which used to route requests to /users endpoint based on the HTTP Method
-func (uh UserHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (uh *UserHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Handling HTTP Request:\nMethod: %v\nPath: %v", r.Method, r.URL.Path)
 	ctx := r.Context()
 
@@ -43,20 +43,20 @@ func (uh UserHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			lib.WriteJSONResponse(w, http.StatusOK, users)
 			return
 		}
-	case http.MethodPost:
-		var user model.User
+	// case http.MethodPost:
+	// 	var user model.User
 
-		if err := lib.DecodeAndValidateRequest(r, &user); err != nil {
-			lib.WriteJSONResponse(w, http.StatusBadRequest, err)
-			return
-		}
-		lib.SanitizeInput(&user)
-		if err := uh.UserService.CreateUser(ctx, user); err != nil {
-			lib.WriteJSONResponse(w, http.StatusInternalServerError, lib.HandlerResponse{Message: err.Error()})
-			return
-		}
-		lib.WriteJSONResponse(w, http.StatusOK, nil)
-		return
+	// 	if err := lib.DecodeAndValidateRequest(r, &user); err != nil {
+	// 		lib.WriteJSONResponse(w, http.StatusBadRequest, err)
+	// 		return
+	// 	}
+	// 	lib.SanitizeInput(&user)
+	// 	if err := uh.UserService.CreateUser(ctx, user); err != nil {
+	// 		lib.WriteJSONResponse(w, http.StatusInternalServerError, lib.HandlerResponse{Message: err.Error()})
+	// 		return
+	// 	}
+	// 	lib.WriteJSONResponse(w, http.StatusOK, nil)
+	// 	return
 	case http.MethodDelete:
 		if r.URL.Query().Has("uid") {
 			uid := r.URL.Query().Get("uid")
@@ -79,7 +79,7 @@ func (uh UserHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			lib.SanitizeInput(&user)
-			if err := uh.UserService.UpdateUser(ctx, user); err != nil {
+			if err := uh.UserService.UpdateUser(ctx, user, user.UserId); err != nil {
 				lib.WriteJSONResponse(w, http.StatusInternalServerError, lib.HandlerResponse{Message: err.Error()})
 				return
 			}

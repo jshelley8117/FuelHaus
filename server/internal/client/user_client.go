@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"cloud.google.com/go/firestore"
@@ -12,17 +13,17 @@ import (
 
 type UserClient struct{}
 
-func NewUserClient() UserClient {
-	return UserClient{}
+func NewUserClient() *UserClient {
+	return &UserClient{}
 }
 
-func (uc *UserClient) FetchAllUsers(ctx context.Context, firebaseServices resource.FirebaseServices) ([]model.User, error) {
+func (uc *UserClient) FetchAllUsers(ctx context.Context, firebaseServices resource.FirebaseServices) ([]model.UserResponse, error) {
 	firestoreClient := firebaseServices.Firestore
 
 	docIter := firestoreClient.Collection("users").Documents(ctx)
 	defer docIter.Stop()
 
-	var users []model.User
+	var users []model.UserResponse
 	for {
 		doc, err := docIter.Next()
 		if err == iterator.Done {
@@ -31,10 +32,10 @@ func (uc *UserClient) FetchAllUsers(ctx context.Context, firebaseServices resour
 		if err != nil {
 			return nil, err
 		}
-		var user model.User
+		var user model.UserResponse
 		err = doc.DataTo(&user)
 		if err != nil {
-			log.Printf("Failed to map Firestore document to User struct: %v", err)
+			log.Printf("Failed to map Firestore document to UserResponse struct: %v", err)
 		}
 		user.UserId = doc.Ref.ID
 		users = append(users, user)
@@ -43,7 +44,7 @@ func (uc *UserClient) FetchAllUsers(ctx context.Context, firebaseServices resour
 	return users, nil
 }
 
-func (uc *UserClient) FetchUserByEmail(ctx context.Context, firebaseServices resource.FirebaseServices, email string) (model.User, error) {
+func (uc *UserClient) FetchUserByEmail(ctx context.Context, firebaseServices resource.FirebaseServices, email string) (model.UserResponse, error) {
 	firestoreClient := firebaseServices.Firestore
 
 	query := firestoreClient.Collection("users").Where("email", "==", email).Limit(1)
@@ -52,24 +53,24 @@ func (uc *UserClient) FetchUserByEmail(ctx context.Context, firebaseServices res
 
 	doc, err := docIter.Next()
 	if err == iterator.Done {
-		return model.User{}, nil
+		return model.UserResponse{}, fmt.Errorf("the following email could not be found: %s", email)
 	}
 	if err != nil {
-		return model.User{}, err
+		return model.UserResponse{}, err
 	}
-	var user model.User
+	var user model.UserResponse
 	if err := doc.DataTo(&user); err != nil {
 		log.Printf("Failed to fetch user by email in firestore: %v", err)
-		return model.User{}, err
+		return model.UserResponse{}, err
 	}
 	user.UserId = doc.Ref.ID
 	return user, nil
 }
 
-func (uc *UserClient) CreateUser(ctx context.Context, firebaseServices resource.FirebaseServices, u model.User) error {
+func (uc *UserClient) CreateUser(ctx context.Context, firebaseServices resource.FirebaseServices, uid string, u model.User) error {
 	log.Println("Entered Client: CreateUser")
 	firestoreClient := firebaseServices.Firestore
-	_, _, err := firestoreClient.Collection("users").Add(ctx, u)
+	_, err := firestoreClient.Collection("users").Doc(uid).Create(ctx, u)
 	if err != nil {
 		log.Printf("Failed to create user in firestore: %v", err)
 		return err

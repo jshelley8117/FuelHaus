@@ -3,11 +3,8 @@ package service
 import (
 	"context"
 	"log"
-	"time"
 
 	"firebase.google.com/go/v4/auth"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
 	"github.com/jshelley8117/FuelHaus/internal/client"
 	// "github.com/jshelley8117/FuelHaus/internal/lib"
@@ -23,14 +20,14 @@ type IAuthService interface {
 type AuthService struct {
 	UserService     IUserService
 	FirebaseService resource.FirebaseServices
-	AuthClient      client.AuthClient
+	AuthClient      *client.AuthClient
 }
 
 type AuthRequest struct {
 }
 
-func NewAuthService(userService IUserService, firebaseService resource.FirebaseServices, authClient client.AuthClient) AuthService {
-	return AuthService{
+func NewAuthService(userService IUserService, firebaseService resource.FirebaseServices, authClient *client.AuthClient) *AuthService {
+	return &AuthService{
 		UserService:     userService,
 		FirebaseService: firebaseService,
 		AuthClient:      authClient,
@@ -46,17 +43,8 @@ func (as *AuthService) AuthenticateExistingUser(ctx context.Context, ipAddr, use
 	// verify user in firebase auth -> checks to see if email exists in firestore
 	userRecord, err := fbAuthClient.GetUserByEmail(ctx, email)
 	if err != nil {
-		// status = handleFirebaseAuthError(err)
-		// if authErr := as.logAuthRequest(ctx, email, ipAddr, userAgent, method, lib.LOGIN, status); authErr != nil {
-		// 	return "", authErr
-		// }
 		return "", err
 	}
-	// status = lib.SUCCESSS
-
-	// if err := as.logAuthRequest(ctx, email, ipAddr, userAgent, method, lib.LOGIN, status); err != nil {
-	// 	return "", err
-	// }
 
 	jwt, err := generateJWT(ctx, fbAuthClient, userRecord.UID)
 	if err != nil {
@@ -81,16 +69,11 @@ func (as *AuthService) AuthenticateNewUser(ctx context.Context, ipAddr string, u
 		return "", err
 	}
 	u.UserId = userRecord.UID
-	u.Password = "REDACTED"
 
 	// store newly created user in internal Firestore
-	if err := as.UserService.CreateUser(ctx, u); err != nil {
+	if err := as.UserService.CreateUser(ctx, u, u.UserId); err != nil {
 		return "", err
 	}
-
-	// if err := as.logAuthRequest(ctx, u.Email, ipAddr, userAgent, method, lib.REGISTER, lib.SUCCESSS); err != nil {
-	// 	return "", err
-	// }
 
 	jwt, err := generateJWT(ctx, fbAuthClient, userRecord.UID)
 	if err != nil {
@@ -99,6 +82,7 @@ func (as *AuthService) AuthenticateNewUser(ctx context.Context, ipAddr string, u
 	return jwt, nil
 }
 
+// Orchestrates the process for creating and sending an Authentication Request
 // func (as *AuthService) logAuthRequest(ctx context.Context, email, ipAddr, userAgent, method, authType, status string) error {
 // 	authAttempt := generateAuthRequestPayload(email, ipAddr, userAgent, method, authType)
 // 	authAttempt.Status = status
@@ -108,17 +92,19 @@ func (as *AuthService) AuthenticateNewUser(ctx context.Context, ipAddr string, u
 // 	return nil
 // }
 
-func generateAuthRequestPayload(email, ipAddr, userAgent, method, authType string) model.AuthFirestoreRequest {
-	return model.AuthFirestoreRequest{
-		Email:     email,
-		CreatedAt: time.Now(),
-		IPAddress: ipAddr,
-		UserAgent: userAgent,
-		Method:    method,
-		AuthType:  authType,
-	}
-}
+// Creates an Authentication History request payload
+// func generateAuthRequestPayload(email, ipAddr, userAgent, method, authType string) model.AuthFirestoreRequest {
+// 	return model.AuthFirestoreRequest{
+// 		Email:     email,
+// 		CreatedAt: time.Now(),
+// 		IPAddress: ipAddr,
+// 		UserAgent: userAgent,
+// 		Method:    method,
+// 		AuthType:  authType,
+// 	}
+// }
 
+// Generates a Custom Client token to be used on subsequent requests to the server
 func generateJWT(ctx context.Context, fbAuthClient *auth.Client, uid string) (string, error) {
 	jwtToken, err := fbAuthClient.CustomToken(ctx, uid)
 	if err != nil {
@@ -127,9 +113,10 @@ func generateJWT(ctx context.Context, fbAuthClient *auth.Client, uid string) (st
 	return jwtToken, nil
 }
 
-func handleFirebaseAuthError(err error) string {
-	if status.Code(err) == codes.NotFound {
-		return "Email does not exist"
-	}
-	return "Firebase Auth Error: " + err.Error()
-}
+// Returns an error string pertaining to what the specific Firebase Auth Error is
+// func handleFirebaseAuthError(err error) string {
+// 	if status.Code(err) == codes.NotFound {
+// 		return "Email does not exist"
+// 	}
+// 	return "Firebase Auth Error: " + err.Error()
+// }
