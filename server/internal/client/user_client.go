@@ -19,10 +19,8 @@ func NewUserClient() *UserClient {
 
 func (uc *UserClient) FetchAllUsers(ctx context.Context, firebaseServices resource.FirebaseServices) ([]model.UserResponse, error) {
 	firestoreClient := firebaseServices.Firestore
-
 	docIter := firestoreClient.Collection("users").Documents(ctx)
 	defer docIter.Stop()
-
 	var users []model.UserResponse
 	for {
 		doc, err := docIter.Next()
@@ -33,9 +31,9 @@ func (uc *UserClient) FetchAllUsers(ctx context.Context, firebaseServices resour
 			return nil, err
 		}
 		var user model.UserResponse
-		err = doc.DataTo(&user)
-		if err != nil {
+		if err := doc.DataTo(&user); err != nil {
 			log.Printf("Failed to map Firestore document to UserResponse struct: %v", err)
+			return nil, err
 		}
 		user.UserId = doc.Ref.ID
 		users = append(users, user)
