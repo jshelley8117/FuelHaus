@@ -72,3 +72,13 @@ func (pc *ProductClient) GetProductById(ctx context.Context, firebaseService res
 	product.ProductId = doc.Ref.ID
 	return product, nil
 }
+
+func (pc *ProductClient) DeleteProductById(ctx context.Context, firebaseService resource.FirebaseServices, id string) error {
+	log.Println("Entered Client: DeleteProductById")
+	firestoreClient := firebaseService.Firestore
+	_, err := firestoreClient.Collection("products").Doc(id).Delete(ctx)
+	if err != nil {
+		return err
+	}
+	return nil
+}

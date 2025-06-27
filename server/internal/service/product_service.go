@@ -11,11 +11,11 @@ import (
 )
 
 type IProductService interface {
-	CreateProduct(ctx context.Context, req model.Product) error
-	GetAllProducts(ctx context.Context) ([]model.Product, error)
-	DeleteProduct(ctx context.Context, id string) error
+	CreateProduct(ctx context.Context, req model.ProductRequest) error
+	GetAllProducts(ctx context.Context) ([]model.ProductResponse, error)
+	DeleteProductById(ctx context.Context, id string) error
 	UpdateProduct(ctx context.Context, req model.Product) error
-	GetProductById(ctx context.Context, id string) (model.Product, error)
+	GetProductById(ctx context.Context, id string) (model.ProductResponse, error)
 }
 
 type ProductService struct {
@@ -30,26 +30,36 @@ func NewProductService(productClient *client.ProductClient, firebaseService reso
 	}
 }
 
-func (ps *ProductService) CreateProduct(ctx context.Context, req model.Product) error {
+func (ps *ProductService) CreateProduct(ctx context.Context, req model.ProductRequest) error {
 	log.Println("Entered Service: CreateProduct")
-	req.CreatedAt = time.Now()
-	req.UpdatedAt = time.Now()
-	req.IsProductActive = true
-	if err := ps.ProductClient.CreateProduct(ctx, ps.FirebaseService, req); err != nil {
+	product := model.Product{
+		Name:            req.Name,
+		Description:     req.Description,
+		Category:        req.Category,
+		Price:           model.DollarAmountToCents(req.Price),
+		IsProductActive: true,
+		CreatedAt:       time.Now(),
+		UpdatedAt:       time.Now(),
+	}
+	if err := ps.ProductClient.CreateProduct(ctx, ps.FirebaseService, product); err != nil {
 		log.Println("Service Error: Failed to create Product")
 		return err
 	}
 	return nil
 }
 
-func (ps *ProductService) GetAllProducts(ctx context.Context) ([]model.Product, error) {
+func (ps *ProductService) GetAllProducts(ctx context.Context) ([]model.ProductResponse, error) {
 	log.Println("Entered Service: GetAllProducts")
 	products, err := ps.ProductClient.GetAllProducts(ctx, ps.FirebaseService)
 	if err != nil {
 		log.Println("Service Error: Failed to retreive all products")
-		return []model.Product{}, err
+		return []model.ProductResponse{}, err
 	}
-	return products, nil
+	productsResponse := make([]model.ProductResponse, len(products))
+	for i, product := range products {
+		productsResponse[i] = mapProductToProductResponse(product)
+	}
+	return productsResponse, nil
 }
 
 func (ps *ProductService) DeleteProduct(ctx context.Context, id string) error {
@@ -62,12 +72,34 @@ func (ps *ProductService) UpdateProduct(ctx context.Context, req model.Product) 
 	return nil
 }
 
-func (ps *ProductService) GetProductById(ctx context.Context, id string) (model.Product, error) {
+func (ps *ProductService) GetProductById(ctx context.Context, id string) (model.ProductResponse, error) {
 	log.Println("Entered Service: GetProductById")
 	product, err := ps.ProductClient.GetProductById(ctx, ps.FirebaseService, id)
+	productResponse := mapProductToProductResponse(product)
 	if err != nil {
 		log.Println("Service Error: Failed to retrieve product by ID")
-		return model.Product{}, err
+		return model.ProductResponse{}, err
 	}
-	return product, nil
+	return productResponse, nil
+}
+
+func (ps *ProductService) DeleteProductById(ctx context.Context, id string) error {
+	log.Println("Entered Service: DeleteProductById")
+	if err := ps.ProductClient.DeleteProductById(ctx, ps.FirebaseService, id); err != nil {
+		return err
+	}
+	return nil
+}
+
+func mapProductToProductResponse(p model.Product) model.ProductResponse {
+	return model.ProductResponse{
+		ProductId:       p.ProductId,
+		Name:            p.Name,
+		Description:     p.Description,
+		Category:        p.Category,
+		Price:           model.CentsToDollarAmount(p.Price),
+		IsProductActive: p.IsProductActive,
+		CreatedAt:       p.CreatedAt,
+		UpdatedAt:       p.UpdatedAt,
+	}
 }
