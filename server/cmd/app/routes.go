@@ -40,4 +40,16 @@ func SetupRoutes(mux *http.ServeMux, firebaseServices resource.FirebaseServices)
 	// v2 auth routes
 	mux.HandleFunc("POST /api/v2/auth/register", v2AuthHandler.Register)
 	mux.HandleFunc("POST /api/v2/auth/login", v2AuthHandler.Login)
+
+	// products API
+	productClient := client.NewProductClient()
+	productService := service.NewProductService(productClient, firebaseServices)
+	productHandler := v1.NewProductHandler(productService)
+
+	// v1 product routes
+	mux.HandleFunc("POST /api/v1/products", productHandler.HandleCreateProduct)
+	mux.HandleFunc("GET /api/v1/products", productHandler.HandleGetAllProducts)
+	mux.HandleFunc("GET /api/v1/products/{id}", productHandler.HandleGetProductById)
+	mux.HandleFunc("DELETE /api/v1/products/{id}", productHandler.HandleDeleteProductById)
+	mux.HandleFunc("PATCH /api/v1/products/{id}", productHandler.HandleUpdateProductById)
 }
