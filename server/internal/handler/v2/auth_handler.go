@@ -23,17 +23,24 @@ func (ah *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var auth model.AuthRequest
 
 	if err := lib.DecodeAndValidateRequest(r, &auth); err != nil {
-		lib.WriteJSONResponse(w, http.StatusBadRequest, lib.HandlerResponse{Message: err.Error()})
+		lib.WriteJSONResponse(w, http.StatusBadRequest, lib.HandlerResponse{
+			Message: err.Error(),
+		})
 		return
 	}
 
 	jwt, err := ah.AuthService.AuthenticateExistingUser(ctx, r.RemoteAddr, r.UserAgent(), r.Method, auth.Email, auth.Password)
 	if err != nil {
-		lib.WriteJSONResponse(w, http.StatusInternalServerError, lib.HandlerResponse{Message: err.Error()})
+		lib.WriteJSONResponse(w, http.StatusInternalServerError, lib.HandlerResponse{
+			Message: err.Error(),
+		})
 		return
 	}
 
-	lib.WriteJSONResponse(w, http.StatusOK, lib.HandlerResponse{Message: "Login Successful", Data: &jwt})
+	lib.WriteJSONResponse(w, http.StatusOK, lib.HandlerResponse{
+		Message: "Login Successful",
+		Data:    &jwt,
+	})
 }
 
 func (ah *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
@@ -42,13 +49,17 @@ func (ah *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var user model.User
 
 	if err := lib.DecodeAndValidateRequest(r, &user); err != nil {
-		lib.WriteJSONResponse(w, http.StatusBadRequest, lib.HandlerResponse{Message: err.Error()})
+		lib.WriteJSONResponse(w, http.StatusBadRequest, lib.HandlerResponse{
+			Message: err.Error(),
+		})
 		return
 	}
 
 	jwt, err := ah.AuthService.AuthenticateNewUser(ctx, r.RemoteAddr, r.UserAgent(), r.Method, user)
 	if err != nil {
-		lib.WriteJSONResponse(w, http.StatusInternalServerError, lib.HandlerResponse{Message: err.Error()})
+		lib.WriteJSONResponse(w, http.StatusInternalServerError, lib.HandlerResponse{
+			Message: err.Error(),
+		})
 		return
 	}
 

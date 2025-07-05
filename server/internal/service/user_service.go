@@ -99,18 +99,33 @@ func (us *UserService) UpdateUser(ctx context.Context, u model.User, uid string)
 
 	var updates []firestore.Update
 	if strings.TrimSpace(u.FirstName) != "" {
-		updates = append(updates, firestore.Update{Path: "first_name", Value: u.FirstName})
+		updates = append(updates, firestore.Update{
+			Path:  "first_name",
+			Value: u.FirstName,
+		})
 	}
 	if strings.TrimSpace(u.LastName) != "" {
-		updates = append(updates, firestore.Update{Path: "last_name", Value: u.LastName})
+		updates = append(updates, firestore.Update{
+			Path:  "last_name",
+			Value: u.LastName,
+		})
 	}
 	if strings.TrimSpace(u.Email) != "" {
-		updates = append(updates, firestore.Update{Path: "email", Value: u.Email})
+		updates = append(updates, firestore.Update{
+			Path:  "email",
+			Value: u.Email,
+		})
 	}
 	if strings.TrimSpace(u.Password) != "" {
-		updates = append(updates, firestore.Update{Path: "password", Value: u.Password})
+		updates = append(updates, firestore.Update{
+			Path:  "password",
+			Value: u.Password,
+		})
 	}
-	updates = append(updates, firestore.Update{Path: "updated_at", Value: time.Now()})
+	updates = append(updates, firestore.Update{
+		Path:  "updated_at",
+		Value: time.Now(),
+	})
 
 	// Update Firestore Document
 	if err := us.UserClient.UpdateUser(ctx, us.FirebaseService, u.UserId, updates); err != nil {

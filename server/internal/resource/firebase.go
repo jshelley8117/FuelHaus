@@ -3,6 +3,7 @@ package resource
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 
 	"cloud.google.com/go/firestore"
@@ -31,24 +32,28 @@ func InitializeFirebaseServices(ctx context.Context) (*FirebaseServices, error) 
 	// Init App
 	app, err := firebase.NewApp(ctx, config, sa)
 	if err != nil {
+		log.Printf("Resource Error: Failed to initialize firebase app service [%v]", err)
 		return nil, err
 	}
 
 	// Init Auth
 	authClient, err := app.Auth(ctx)
 	if err != nil {
+		log.Printf("Resource Error: Failed to initialize firebase auth service [%v]", err)
 		return nil, err
 	}
 
 	// Init Storage
 	storageClient, err := app.Storage(ctx)
 	if err != nil {
+		log.Printf("Resource Error: Failed to initialize firebase storage service [%v]", err)
 		return nil, err
 	}
 
 	// Init Firestore
 	firestoreClient, err := app.Firestore(ctx)
 	if err != nil {
+		log.Printf("Resource Error: Failed to initialize firestore [%v]", err)
 		return nil, err
 	}
 

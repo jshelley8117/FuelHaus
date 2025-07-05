@@ -1,6 +1,7 @@
 package v2
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 
@@ -23,7 +24,9 @@ func (uh *UserHandler) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 
 	users, err := uh.UserService.GetAllUsers(ctx)
 	if err != nil {
-		lib.WriteJSONResponse(w, http.StatusInternalServerError, lib.HandlerResponse{Message: err.Error()})
+		lib.WriteJSONResponse(w, http.StatusInternalServerError, lib.HandlerResponse{
+			Message: err.Error(),
+		})
 		return
 	}
 
@@ -36,7 +39,9 @@ func (uh *UserHandler) GetUserByEmail(w http.ResponseWriter, r *http.Request) {
 
 	user, err := uh.UserService.GetUserByEmail(ctx, r.PathValue("email"))
 	if err != nil {
-		lib.WriteJSONResponse(w, http.StatusInternalServerError, lib.HandlerResponse{Message: err.Error()})
+		lib.WriteJSONResponse(w, http.StatusInternalServerError, lib.HandlerResponse{
+			Message: err.Error(),
+		})
 		return
 	}
 
@@ -68,11 +73,15 @@ func (uh *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	if err := uh.UserService.DeleteUser(ctx, r.PathValue("uid")); err != nil {
-		lib.WriteJSONResponse(w, http.StatusInternalServerError, lib.HandlerResponse{Message: err.Error()})
+		lib.WriteJSONResponse(w, http.StatusInternalServerError, lib.HandlerResponse{
+			Message: err.Error(),
+		})
 		return
 	}
 
-	lib.WriteJSONResponse(w, http.StatusOK, nil)
+	lib.WriteJSONResponse(w, http.StatusOK, lib.HandlerResponse{
+		Message: fmt.Sprintf("User %s deleted successfully", r.PathValue("uid")),
+	})
 }
 
 func (uh *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
@@ -83,15 +92,21 @@ func (uh *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	user.UserId = r.PathValue("uid")
 
 	if err := lib.DecodeAndValidateRequest(r, &user); err != nil {
-		lib.WriteJSONResponse(w, http.StatusBadRequest, lib.HandlerResponse{Message: err.Error()})
+		lib.WriteJSONResponse(w, http.StatusBadRequest, lib.HandlerResponse{
+			Message: err.Error(),
+		})
 		return
 	}
 
 	lib.SanitizeInput(&user)
 	if err := uh.UserService.UpdateUser(ctx, user, user.UserId); err != nil {
-		lib.WriteJSONResponse(w, http.StatusInternalServerError, lib.HandlerResponse{Message: err.Error()})
+		lib.WriteJSONResponse(w, http.StatusInternalServerError, lib.HandlerResponse{
+			Message: err.Error(),
+		})
 		return
 	}
 
-	lib.WriteJSONResponse(w, http.StatusOK, nil)
+	lib.WriteJSONResponse(w, http.StatusOK, lib.HandlerResponse{
+		Message: fmt.Sprintf("User %s updated successfully", user.UserId),
+	})
 }
