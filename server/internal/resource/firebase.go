@@ -34,23 +34,21 @@ func InitializeFirebaseServices(ctx context.Context) (*FirebaseServices, error) 
 		return nil, err
 	}
 
-	// Init Firestore
-	firestoreClient, err := app.Firestore(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	// Init Auth
 	authClient, err := app.Auth(ctx)
 	if err != nil {
-		firestoreClient.Close()
 		return nil, err
 	}
 
 	// Init Storage
 	storageClient, err := app.Storage(ctx)
 	if err != nil {
-		firestoreClient.Close()
+		return nil, err
+	}
+
+	// Init Firestore
+	firestoreClient, err := app.Firestore(ctx)
+	if err != nil {
 		return nil, err
 	}
 
