@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 
@@ -56,7 +57,7 @@ func (ph *ProductHandler) HandleGetProductById(w http.ResponseWriter, r *http.Re
 		return
 	}
 	lib.WriteJSONResponse(w, http.StatusOK, lib.HandlerResponse{
-		Message: "Product fetched successfully",
+		Message: fmt.Sprintf("Product %s fetched successfully", id),
 		Data:    product,
 	})
 }
@@ -69,7 +70,7 @@ func (ph *ProductHandler) HandleDeleteProductById(w http.ResponseWriter, r *http
 		lib.WriteJSONResponse(w, http.StatusInternalServerError, lib.HandlerResponse{Message: err.Error()})
 		return
 	}
-	lib.WriteJSONResponse(w, http.StatusOK, lib.HandlerResponse{Message: "Product deleted successfully"})
+	lib.WriteJSONResponse(w, http.StatusOK, lib.HandlerResponse{Message: fmt.Sprintf("Product %s deleted successfully", id)})
 }
 
 func (ph *ProductHandler) HandleUpdateProductById(w http.ResponseWriter, r *http.Request) {
@@ -85,5 +86,5 @@ func (ph *ProductHandler) HandleUpdateProductById(w http.ResponseWriter, r *http
 		lib.WriteJSONResponse(w, http.StatusInternalServerError, lib.HandlerResponse{Message: err.Error()})
 		return
 	}
-	lib.WriteJSONResponse(w, http.StatusOK, lib.HandlerResponse{Message: "Product updated successfully"})
+	lib.WriteJSONResponse(w, http.StatusOK, lib.HandlerResponse{Message: fmt.Sprintf("Product %s updated successfully", id)})
 }

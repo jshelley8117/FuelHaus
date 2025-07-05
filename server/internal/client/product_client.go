@@ -79,6 +79,7 @@ func (pc *ProductClient) DeleteProductById(ctx context.Context, firebaseService 
 	firestoreClient := firebaseService.Firestore
 	_, err := firestoreClient.Collection("products").Doc(id).Delete(ctx)
 	if err != nil {
+		log.Printf("Client Error: Failed to delete product in firestore: %v", err)
 		return err
 	}
 	return nil

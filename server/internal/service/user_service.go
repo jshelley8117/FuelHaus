@@ -40,15 +40,16 @@ func NewUserService(userClient *client.UserClient, firebaseService resource.Fire
 func (us *UserService) GetAllUsers(ctx context.Context) ([]model.UserResponse, error) {
 	fsUsers, err := us.UserClient.FetchAllUsers(ctx, us.FirebaseService)
 	if err != nil {
+		log.Printf("Service Error: Failed to retrieve all users [%v]", err)
 		return nil, err
 	}
-
 	return fsUsers, nil
 }
 
 func (us *UserService) GetUserByEmail(ctx context.Context, email string) (model.UserResponse, error) {
 	fsUser, err := us.UserClient.FetchUserByEmail(ctx, us.FirebaseService, email)
 	if err != nil {
+		log.Printf("Service Error: Failed to retrieve user by email [%v]", err)
 		return model.UserResponse{}, err
 	}
 	return model.UserResponse{
@@ -64,7 +65,6 @@ func (us *UserService) GetUserByEmail(ctx context.Context, email string) (model.
 
 func (us *UserService) CreateUser(ctx context.Context, reqUser model.User, uid string) error {
 	log.Println("Entered Service: CreateUser")
-
 	reqUser.CreatedAt = time.Now()
 	reqUser.UpdatedAt = time.Now()
 	reqUser.IsUserActive = true
@@ -76,6 +76,7 @@ func (us *UserService) CreateUser(ctx context.Context, reqUser model.User, uid s
 		IsUserActive: reqUser.IsUserActive,
 		UpdatedAt:    reqUser.UpdatedAt,
 	}); err != nil {
+		log.Printf("Service Error: Failed to create new user [%v]", err)
 		return err
 	}
 	return nil
@@ -83,15 +84,14 @@ func (us *UserService) CreateUser(ctx context.Context, reqUser model.User, uid s
 
 func (us *UserService) DeleteUser(ctx context.Context, userId string) error {
 	log.Println("Entered Service: DeleteUser")
-
 	if err := us.UserClient.DeleteUser(ctx, us.FirebaseService, userId); err != nil {
+		log.Printf("Service Error: Failed to delete user in firestore [%v]", err)
 		return err
 	}
-
 	if err := us.FirebaseService.Auth.DeleteUser(ctx, userId); err != nil {
+		log.Printf("Service Error: Failed to delete user in firebase auth [%v]", err)
 		return err
 	}
-
 	return nil
 }
 
@@ -114,6 +114,7 @@ func (us *UserService) UpdateUser(ctx context.Context, u model.User, uid string)
 
 	// Update Firestore Document
 	if err := us.UserClient.UpdateUser(ctx, us.FirebaseService, u.UserId, updates); err != nil {
+		log.Printf("Service Error: Failed to update user in firestore [%v]", err)
 		return err
 	}
 
@@ -127,6 +128,7 @@ func (us *UserService) UpdateUser(ctx context.Context, u model.User, uid string)
 	}
 
 	if _, err := us.FirebaseService.Auth.UpdateUser(ctx, uid, userToUpdate); err != nil {
+		log.Printf("Service Error: Failed to update user in firebase auth [%v]", err)
 		return err
 	}
 

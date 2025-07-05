@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"log"
 
 	"github.com/jshelley8117/FuelHaus/internal/model"
 	"github.com/jshelley8117/FuelHaus/internal/resource"
@@ -17,6 +18,7 @@ func (ac *AuthClient) CreateAuthenticationRequest(ctx context.Context, firebaseS
 	firestoreClient := firebaseService.Firestore
 	_, _, err := firestoreClient.Collection("auth_history").Add(ctx, a)
 	if err != nil {
+		log.Printf("Client Error: failed to create authentication request in firestore [%v]", err)
 		return err
 	}
 	return nil

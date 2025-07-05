@@ -32,33 +32,30 @@ func (uc *UserClient) FetchAllUsers(ctx context.Context, firebaseServices resour
 		}
 		var user model.UserResponse
 		if err := doc.DataTo(&user); err != nil {
-			log.Printf("Failed to map Firestore document to UserResponse struct: %v", err)
+			log.Printf("Client Error: Failed to map Firestore document to UserResponse struct [%v]", err)
 			return nil, err
 		}
 		user.UserId = doc.Ref.ID
 		users = append(users, user)
 	}
-
 	return users, nil
 }
 
 func (uc *UserClient) FetchUserByEmail(ctx context.Context, firebaseServices resource.FirebaseServices, email string) (model.UserResponse, error) {
 	firestoreClient := firebaseServices.Firestore
-
 	query := firestoreClient.Collection("users").Where("email", "==", email).Limit(1)
 	docIter := query.Documents(ctx)
 	defer docIter.Stop()
-
 	doc, err := docIter.Next()
 	if err == iterator.Done {
-		return model.UserResponse{}, fmt.Errorf("the following email could not be found: %s", email)
+		return model.UserResponse{}, fmt.Errorf("the following email could not be found [%s]", email)
 	}
 	if err != nil {
 		return model.UserResponse{}, err
 	}
 	var user model.UserResponse
 	if err := doc.DataTo(&user); err != nil {
-		log.Printf("Failed to fetch user by email in firestore: %v", err)
+		log.Printf("Client Error: Failed to fetch user by email in firestore [%v]", err)
 		return model.UserResponse{}, err
 	}
 	user.UserId = doc.Ref.ID
@@ -70,7 +67,7 @@ func (uc *UserClient) CreateUser(ctx context.Context, firebaseServices resource.
 	firestoreClient := firebaseServices.Firestore
 	_, err := firestoreClient.Collection("users").Doc(uid).Create(ctx, u)
 	if err != nil {
-		log.Printf("Failed to create user in firestore: %v", err)
+		log.Printf("Client Error: Failed to create user in firestore [%v]", err)
 		return err
 	}
 	return nil
@@ -81,7 +78,7 @@ func (uc *UserClient) DeleteUser(ctx context.Context, firebaseServices resource.
 	firestoreClient := firebaseServices.Firestore
 	_, err := firestoreClient.Collection("users").Doc(userId).Delete(ctx)
 	if err != nil {
-		log.Printf("Failed to delete user in firestore: %v", err)
+		log.Printf("Client Error: Failed to delete user in firestore [%v]", err)
 		return err
 	}
 	return nil
@@ -92,7 +89,7 @@ func (uc *UserClient) UpdateUser(ctx context.Context, firebaseServices resource.
 	firestoreClient := firebaseServices.Firestore
 	_, err := firestoreClient.Collection("users").Doc(uid).Update(ctx, updates)
 	if err != nil {
-		log.Printf("Failed to update user in firestore: %v", err)
+		log.Printf("Client Error: Failed to update user in firestore [%v]", err)
 		return err
 	}
 	return nil

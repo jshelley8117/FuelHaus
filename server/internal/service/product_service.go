@@ -43,7 +43,7 @@ func (ps *ProductService) CreateProduct(ctx context.Context, req model.ProductRe
 		UpdatedAt:       time.Now(),
 	}
 	if err := ps.ProductClient.CreateProduct(ctx, ps.FirebaseService, product); err != nil {
-		log.Println("Service Error: Failed to create Product")
+		log.Printf("Service Error: Failed to create Product [%v]", err)
 		return err
 	}
 	return nil
@@ -53,7 +53,7 @@ func (ps *ProductService) GetAllProducts(ctx context.Context) ([]model.ProductRe
 	log.Println("Entered Service: GetAllProducts")
 	products, err := ps.ProductClient.GetAllProducts(ctx, ps.FirebaseService)
 	if err != nil {
-		log.Println("Service Error: Failed to retreive all products")
+		log.Printf("Service Error: Failed to retreive all products [%v]", err)
 		return []model.ProductResponse{}, err
 	}
 	productsResponse := make([]model.ProductResponse, len(products))
@@ -101,6 +101,7 @@ func (ps *ProductService) UpdateProductById(ctx context.Context, id string, req 
 		Value: time.Now(),
 	})
 	if err := ps.ProductClient.UpdateProductById(ctx, ps.FirebaseService, id, updates); err != nil {
+		log.Printf("Service Error: Failed UpdateProductById client invocation [%v]", err)
 		return err
 	}
 	return nil
@@ -111,7 +112,7 @@ func (ps *ProductService) GetProductById(ctx context.Context, id string) (model.
 	product, err := ps.ProductClient.GetProductById(ctx, ps.FirebaseService, id)
 	productResponse := mapProductToProductResponse(product)
 	if err != nil {
-		log.Println("Service Error: Failed to retrieve product by ID")
+		log.Printf("Service Error: Failed to retrieve product by ID [%v]", err)
 		return model.ProductResponse{}, err
 	}
 	return productResponse, nil
@@ -120,6 +121,7 @@ func (ps *ProductService) GetProductById(ctx context.Context, id string) (model.
 func (ps *ProductService) DeleteProductById(ctx context.Context, id string) error {
 	log.Println("Entered Service: DeleteProductById")
 	if err := ps.ProductClient.DeleteProductById(ctx, ps.FirebaseService, id); err != nil {
+		log.Printf("Service Error: Failed to delete product by ID [%v]", err)
 		return err
 	}
 	return nil

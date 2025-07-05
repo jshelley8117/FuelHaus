@@ -38,16 +38,17 @@ func NewAuthService(userService IUserService, firebaseService resource.FirebaseS
 func (as *AuthService) AuthenticateExistingUser(ctx context.Context, ipAddr, userAgent, method, email, pw string) (string, error) {
 	log.Println("Entered AuthenticateExistingUser")
 	fbAuthClient := as.FirebaseService.Auth
-	// var status string
 
 	// verify user in firebase auth -> checks to see if email exists in firestore
 	userRecord, err := fbAuthClient.GetUserByEmail(ctx, email)
 	if err != nil {
+		log.Printf("Service Error: Failed to verify user in firebase auth [%v]", err)
 		return "", err
 	}
 
 	jwt, err := generateJWT(ctx, fbAuthClient, userRecord.UID)
 	if err != nil {
+		log.Printf("Service Error: Failed to generate JWT token [%v]", err)
 		return "", nil
 	}
 	return jwt, nil
@@ -66,17 +67,20 @@ func (as *AuthService) AuthenticateNewUser(ctx context.Context, ipAddr string, u
 
 	userRecord, err := fbAuthClient.CreateUser(ctx, params)
 	if err != nil {
+		log.Printf("Service Error: Failed to create user in firebase auth [%v]", err)
 		return "", err
 	}
 	u.UserId = userRecord.UID
 
 	// store newly created user in internal Firestore
 	if err := as.UserService.CreateUser(ctx, u, u.UserId); err != nil {
+		log.Printf("Service Error: Failed to create user in firestore [%v]", err)
 		return "", err
 	}
 
 	jwt, err := generateJWT(ctx, fbAuthClient, userRecord.UID)
 	if err != nil {
+		log.Printf("Service Error: Failed to generate JWT token [%v]", err)
 		return "", err
 	}
 	return jwt, nil
