@@ -47,8 +47,9 @@ func SetupRoutes(mux *http.ServeMux, firebaseServices resource.FirebaseServices)
 	productHandler := v1.NewProductHandler(productService)
 
 	// v1 product routes
-	mux.HandleFunc("POST /api/v1/products", productHandler.CreateProduct)
-	mux.HandleFunc("GET /api/v1/products", productHandler.GetAllProducts)
-	mux.HandleFunc("GET /api/v1/products/{id}", productHandler.GetProductById)
-	mux.HandleFunc("DELETE /api/v1/products/{id}", productHandler.DeleteProductById)
+	mux.HandleFunc("POST /api/v1/products", productHandler.HandleCreateProduct)
+	mux.HandleFunc("GET /api/v1/products", productHandler.HandleGetAllProducts)
+	mux.HandleFunc("GET /api/v1/products/{id}", productHandler.HandleGetProductById)
+	mux.HandleFunc("DELETE /api/v1/products/{id}", productHandler.HandleDeleteProductById)
+	mux.HandleFunc("PATCH /api/v1/products/{id}", productHandler.HandleUpdateProductById)
 }

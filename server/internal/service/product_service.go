@@ -5,6 +5,7 @@ import (
 	"log"
 	"time"
 
+	"cloud.google.com/go/firestore"
 	"github.com/jshelley8117/FuelHaus/internal/client"
 	"github.com/jshelley8117/FuelHaus/internal/model"
 	"github.com/jshelley8117/FuelHaus/internal/resource"
@@ -14,7 +15,7 @@ type IProductService interface {
 	CreateProduct(ctx context.Context, req model.ProductRequest) error
 	GetAllProducts(ctx context.Context) ([]model.ProductResponse, error)
 	DeleteProductById(ctx context.Context, id string) error
-	UpdateProduct(ctx context.Context, req model.Product) error
+	UpdateProductById(ctx context.Context, id string, req model.ProductUpdateRequest) error
 	GetProductById(ctx context.Context, id string) (model.ProductResponse, error)
 }
 
@@ -62,13 +63,46 @@ func (ps *ProductService) GetAllProducts(ctx context.Context) ([]model.ProductRe
 	return productsResponse, nil
 }
 
-func (ps *ProductService) DeleteProduct(ctx context.Context, id string) error {
-
-	return nil
-}
-
-func (ps *ProductService) UpdateProduct(ctx context.Context, req model.Product) error {
-
+func (ps *ProductService) UpdateProductById(ctx context.Context, id string, req model.ProductUpdateRequest) error {
+	log.Println("Entered Service: UpdateProductById")
+	var updates []firestore.Update
+	if req.Name != nil {
+		updates = append(updates, firestore.Update{
+			Path:  "name",
+			Value: req.Name,
+		})
+	}
+	if req.Description != nil {
+		updates = append(updates, firestore.Update{
+			Path:  "description",
+			Value: req.Description,
+		})
+	}
+	if req.Category != nil {
+		updates = append(updates, firestore.Update{
+			Path:  "category",
+			Value: req.Category,
+		})
+	}
+	if req.Price != nil {
+		updates = append(updates, firestore.Update{
+			Path:  "priceInCents",
+			Value: model.DollarAmountToCents(*req.Price),
+		})
+	}
+	if req.IsProductActive != nil {
+		updates = append(updates, firestore.Update{
+			Path:  "isProductActive",
+			Value: req.IsProductActive,
+		})
+	}
+	updates = append(updates, firestore.Update{
+		Path:  "updatedAt",
+		Value: time.Now(),
+	})
+	if err := ps.ProductClient.UpdateProductById(ctx, ps.FirebaseService, id, updates); err != nil {
+		return err
+	}
 	return nil
 }
 

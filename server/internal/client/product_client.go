@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 
+	"cloud.google.com/go/firestore"
 	"github.com/jshelley8117/FuelHaus/internal/model"
 	"github.com/jshelley8117/FuelHaus/internal/resource"
 	"google.golang.org/api/iterator"
@@ -78,6 +79,17 @@ func (pc *ProductClient) DeleteProductById(ctx context.Context, firebaseService 
 	firestoreClient := firebaseService.Firestore
 	_, err := firestoreClient.Collection("products").Doc(id).Delete(ctx)
 	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (pc *ProductClient) UpdateProductById(ctx context.Context, firebaseService resource.FirebaseServices, id string, updates []firestore.Update) error {
+	log.Println("Entered Client: UpdateProductById")
+	firestoreClient := firebaseService.Firestore
+	_, err := firestoreClient.Collection("products").Doc(id).Update(ctx, updates)
+	if err != nil {
+		log.Printf("Failed to update product in firestore: %v", err)
 		return err
 	}
 	return nil

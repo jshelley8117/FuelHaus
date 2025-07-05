@@ -19,7 +19,7 @@ type ProductRequest struct {
 	Name        string  `json:"name" validate:"required"`
 	Description string  `json:"description"`
 	Category    string  `json:"category"`
-	Price       float64 `json:"price" validate:"required,min=0"` //  Accept as as float from the client
+	Price       float64 `json:"price" validate:"required,min=0"` //  Accept as a float from the client
 }
 
 type ProductResponse struct {
@@ -31,6 +31,15 @@ type ProductResponse struct {
 	CreatedAt       time.Time `json:"createdAt"`
 	UpdatedAt       time.Time `json:"updatedAt"`
 	IsProductActive bool      `json:"isProductActive"`
+}
+
+type ProductUpdateRequest struct {
+	Name            *string   `firestore:"name,omitempty" json:"name,omitempty"`
+	Description     *string   `firestore:"description,omitempty" json:"description,omitempty"`
+	Category        *string   `firestore:"category,omitempty" json:"category,omitempty"`
+	Price           *float64  `firestore:"priceInCents,omitempty" json:"price,omitempty"` // Accept as a float from the client
+	IsProductActive *bool     `firestore:"isProductActive,omitempty" json:"isProductActive,omitempty"`
+	UpdatedAt       time.Time `firestore:"updatedAt" json:"updatedAt"`
 }
 
 // Convert cents to dollar amount
